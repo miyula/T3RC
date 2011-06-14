@@ -39,43 +39,55 @@ function research_project_form(&$node){
 	    '#default_value' => $node->body,
             '#cols' => 60,
             '#rows' => 5,
-            '#description' => t('Description for this project'),
+            '#description' => t('Description for this project. This will be shown in project page.'),
 	    '#weight' => 0,
 	);
     }
-    $form['invite_persons'] = array(
-        '#type' => 'textarea',
-	'#title' => t('Send emails to invite persons.'),
-	'#required' => FALSE,
-        '#cols' => 60,
-        '#rows' => 5,
-        '#description' => t("Seperated invited persons' emails by ;"),
-	'#weight' => 1,
+    
+    //select research tools
+    $form['tools'] = array(
+	'#value' => '<p>To be implemented later...</p>',
     );
-    $form['invited_emails'] = array(
-	'#value' => "<h2>Persons already invited in this project.</h2>$person_list",
+    
+    //select the way inviting persons to join in the project
+    //  0. open (everyone can join, on project page)
+    //  1. only invited (only invited person)
+    //  2. only by invitation code (only who has invaitation code)
+    $invitation_options = array(
+	0 => 'Open - everyone can join the project from project page.',
+	1 => 'Researcher invite people',
+	2 => 'Join by input invitation code',
+    );
+    $form['invitation'] = array(
+	'#type' => 'radios',
+	'#title' => 'Invitation way',
+	'#options' => $invitation_options,
+	'#description' => t('Choose the way how people can join into the project.'),
+    );
+    
+    //set project current status
+    //  0. prepairing   1. starting  2.closed
+    $status_options = array(
+	0 => 'Prepairing - only researchers can visit project page.',
+	1 => 'Start - persen can visit project page and join the project.',
+	2 => 'Closed - persen can visit project page but join project closed.',
+    );
+    $form['status'] = array(
+	'#type' => 'radios',
+	'#title' => 'Project current status',
+	'#options' => $status_options,
+	'#description' => t(''),
     );
     
     return $form;
 }
 
 /**
- * Validate SIDE_researchproject form.
+ * Validate research_project form.
  */
-function researchproject_validate($form, &$form_state){
+function research_project_validate($form, &$form_state){
     
-    if(isset($form_state['invite_persons']['#value'])){
-        $invited_emails = $form_state['invite_persons']['#value'];
-        $email_token = strtok($invited_emails,";");
-        while($email_token!==false){
-            $email = trim($email_token);
-            if(!empty($email)&&!valid_email_address($email)){
-                form_set_error('invite_persons',t('Invalide email addresses.'));
-                return;
-            }
-            $email_token = strtok(";");
-        }
-    }
+    
 }
 
 /**
