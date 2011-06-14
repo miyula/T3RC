@@ -1,0 +1,319 @@
+<?php
+
+/**
+  * Implementation of hook_install().
+  */
+function research_project_install(){
+    
+    //create tow Users roles Researcher and Person
+    $roles = array('Person','Researcher');
+    foreach($roles as $role){
+      //check if this role has already Existed
+      $check_sql = "SELECT rid FROM {role} WHERE name='%s'";
+      $result = db_result(db_query($check_sql,$role));
+      if(!$result||$result<1){
+        $insert_sql = "INSERT INTO {role}(name) VALUES('%s')";
+        db_query($insert_sql,$role);
+      }
+    }
+    
+    //Create tables
+    drupal_install_schema('research_project');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function research_project_uninstall(){
+    //Drop tables
+    drupal_uninstall_schema('research_project');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function research_project_schema(){
+    $schema['research_project_page'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'nid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'project_code'=> array(
+                'type' => 'varchar',
+                'length' => 7,
+                'not null' => TRUE,
+            ),
+            'invitation_way' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'status' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'created' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+            'changed' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'project_code' => array('project_code'),
+            'nid' => array('nid'),
+        ),
+    );
+    
+    $schema['research_tool'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'name' => array(
+                'type' => 'varchar',
+                'length' => 120,
+                'not null' => TRUE,
+            ),
+            'description' => array(
+                'type' => 'text',
+                'not null' => TRUE,
+            ),
+            'guidance' => array(
+                'type' => 'text',
+                'not null' => TRUE,
+            ),
+            'download' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => FALSE,
+            ),
+            'logo' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => FALSE,
+            ),
+            'created' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+            'changed' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('id'),
+    );
+    
+    $schema['project_tools'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'tid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'pid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'pid' => array('pid'),
+            'tid' => array('tid'),
+        ),
+    );
+    
+    $schema['project_persons'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'pid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'status' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'created' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+            'changed' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'pid' => array('pid'),
+            'uid' => array('uid'),
+        ),
+    );
+    
+    $schema['project_researchers'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'pid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'introduction' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => FALSE,  
+            ),
+            'status' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'created' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+            'changed' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+        ),
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'pid' => array('pid'),
+            'uid' => array('uid'),
+        ),
+    );
+    
+    $schema['project_documents'] = array(
+        'fields' => array(
+            'id' => array(
+                'type' => 'serial',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'nid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'pid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'classify' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'created' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+            'changed' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),            
+        ),
+        'primary key' => array('id'),
+        'unique keys' => array(
+            'pid' => array('pid'),
+            'nid' => array('nid'),
+        ),
+    );
+    
+    $schema['person_profiles'] = array(
+        'fields' => array(
+            'uid' => array(
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'phone' => array(
+                'type' => 'varchar',
+                'length' => 20,
+                'not null' => FALSE,
+            ),
+            'firstname' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => FALSE,
+            ),
+            'lastname' => array(
+                'type' => 'varchar',
+                'length' => 45,
+                'not null' => FALSE,
+            ),
+            'birthday' => array(
+                'type' => 'datetime',
+                'not null' => FALSE,
+            ),
+            'sex' => array(
+                'type' => 'varchar',
+                'length' => 1,
+                'not null' => FALSE,
+            ),
+            'created' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),
+            'changed' => array(
+                'type' => 'datetime',
+                'not null' => TRUE,
+            ),            
+        ),
+        'primary key' => array('uid'), 
+    );
+    
+    
+    return $schema;
+}
