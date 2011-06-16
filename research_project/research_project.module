@@ -1,4 +1,89 @@
 <?php
+
+/**
+ * Implements hook_menu()
+ */
+function research_project_menu(){
+    //admin tools part
+    $menu['admin/content/researchtools'] = array(
+	'title' => t('Research Tools'),
+        'description' => t('List research tools'),
+        'page callback' => 'list_research_tools_callback',
+        'access arguments' => array('Edit research tools'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'research.admin.inc',
+    );
+    $menu['admin/content/researchtools/list'] = array(
+	'title' => t('List tools'),
+        'description' => t('List research tools'),
+        'page callback' => 'list_research_tools_callback',
+        'access arguments' => array('Edit research tools'),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'research.admin.inc',
+	'weight' => -1,
+    );
+    $menu['admin/content/researchtools/add'] = array(
+	'title' => t('Add new tool'),
+        'description' => t('Add a new research tool'),
+        'page callback' => 'add_research_tools_callback',
+        'access arguments' => array('Edit research tools'),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'research.admin.inc',
+    );
+    $menu['admin/content/researchtools/edit/%'] = array(
+	'title' => t('Edit Research Tool'),
+        'description' => t('Eidt seleted research tool'),
+        'page callback' => 'edit_research_tools_callback',
+	'page arguments' => array(4),
+        'access arguments' => array('Edit research tools'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'research.admin.inc',
+    );
+    $menu['admin/content/researchtools/delete/%'] = array(
+	'title' => t('Delete Research Tool'),
+        'description' => t('Delete seleted research tool'),
+        'page callback' => 'delete_research_tools_callback',
+	'page arguments' => array(4),
+        'access arguments' => array('Edit research tools'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'research.admin.inc',
+    );
+    
+    //Research Tools
+    $menu['research/tools/%'] =array(
+	'title' => t('Research Tool'),
+	'description' => t('Display the detail of the given research tool'),
+	'page callback' => 'display_research_tool_page',
+	'page arguments' => array(2),
+	'access arguments' => array("access content"),
+	'type' => MENU_CALLBACK,
+    );
+    return $menu;
+}
+
+/**
+ * Menu callback for research/tools/%
+ */
+function display_research_tool_page($tool_id){
+    //get tool info
+    $sql = "SELECT id, name, description, guidance, download, logo from {research_tool} WHERE id=%d";
+    if($tool = db_fetch_object(db_query($sql,$tool_id))){
+        return theme('research_tool_page', $tool);
+    }else{
+        $content="<p><font color='red'>No tool info can be found.</font></p>";
+        return $content;
+    }
+}
+
+
+/**
+ * Implementation of hook_perm().
+ */
+function research_project_perm(){
+    return array(
+	"Edit research tools", //access to admin research tools page, add, edit, and delete research tools
+    );
+}
 /**
  * Implements hook_node_info()
  */
@@ -20,6 +105,7 @@ function research_project_node_info(){
   * Implementation of hook_form().
   */
 function research_project_form(&$node){
+    
     $type = node_get_types('type', $node);
     if ($type->has_title) {
 	$form['title'] = array(
@@ -63,20 +149,24 @@ function research_project_form(&$node){
 	'#title' => 'Invitation way',
 	'#options' => $invitation_options,
 	'#description' => t('Choose the way how people can join into the project.'),
+	'#required' => TRUE,
+	'#default_value' => isset($node->invitation)?$node->invitation:0,
     );
     
     //set project current status
-    //  0. prepairing   1. starting  2.closed
+    //  0. prepairing   1. starting  2.closed, 4. deleted
     $status_options = array(
 	0 => 'Prepairing - only researchers can visit project page.',
 	1 => 'Start - persen can visit project page and join the project.',
 	2 => 'Closed - persen can visit project page but join project closed.',
     );
-    $form['status'] = array(
+    $form['pstatus'] = array(
 	'#type' => 'radios',
 	'#title' => 'Project current status',
 	'#options' => $status_options,
 	'#description' => t(''),
+	'#required' => TRUE,
+	'#default_value' => isset($node->pstatus)?$node->pstatus:0,
     );
     
     return $form;
@@ -87,29 +177,87 @@ function research_project_form(&$node){
  */
 function research_project_validate($form, &$form_state){
     
-    
 }
 
 /**
  * implements hook_insert().
  */
 function research_project_insert($node){
-    
-    
+    $sql = "INSERT INTO {research_project_page}"
+          ."(nid, project_code, invitation_way, status, created, changed) "
+	  ."VALUES(%d, '%s', %d, %d, now(), now())";
+    $project_code = "p".str_pad($node->nid,6,"0",STR_PAD_LEFT);
+    db_query($sql,$node->nid,$project_code,$node->invitation,$node->pstatus);
 }
 
 /**
  * Implements hook_update().
  */
 function research_project_update($node){
-    
+    $sql = "UPDATE {research_project_page} SET invitation_way=%d, status=%d, changed=now() WHERE nid=%d";
+    db_query($sql,$node->invitation,$node->pstatus,$node->nid);
 }
 
 /**
  * Implements hook_delete().
  */
 function research_project_delete($node){
-   
+   // change the state of project, not real deleted
+   $sql = "UPDATE {research_project_page} SET status=4, changed=now() WHERE nid=%d";
+    db_query($sql,$node->nid);
+}
+
+/**
+ * Implementation of hook_load().
+ */
+function research_project_load($node){
+    //get project page info
+    $page_sql = "SELECT project_code, invitation_way, status FROM {research_project_page} WHERE nid=%d";
+    $result = db_query($page_sql, $node->nid);
+    if($result){
+	$page = db_fetch_object($result);
+	$node->project_code = $page->project_code;
+	$node->invitation = $page->invitation_way;
+	$node->pstatus = $page->status;
+    }
+    return $node;
+}
+
+/**
+ * Implementation of hook_view().
+ */
+function research_project_view($node, $teaser = FALSE, $page = FALSE) {
+    
+    drupal_add_css(drupal_get_path('module', 'research_project') .'/research_project.css');
+    
+    $node = node_prepare($node, $teaser); // get it ready for display
+  
+    // Add theme stuff here
+    $node->content['research_project_page'] = array(
+	    '#value' => theme('research_project_page', $node),
+	    '#weight' => 1,
+    );
+    return $node;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function research_project_theme() {
+    return array(
+	'research_project_page' => array(
+	    'template' => 'research_project_page',
+	    'arguments' => array(
+		'node' => NULL,
+	    ),
+	),
+	'research_tool_page' => array(
+	    'template' => 'research_tool_page',
+	    'arguments' => array(
+		'tool' => NULL,
+	    ),
+	),
+    );
 }
 
 /**
