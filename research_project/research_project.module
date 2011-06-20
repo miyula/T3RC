@@ -98,6 +98,17 @@ function research_project_menu(){
 	'title' => t('Check researcher email'),
 	'description' => t('Return the result if this account can be invited to this project'),
 	'page callback' => 'check_invited_researcher_email',
+	'page arguments' => array(3),
+	'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/researcher/invitenew/%'] = array(
+	'title' => t('Invite new researcher'),
+	'description' => t('Invite new researcher into the project'),
+	'page callback' => 'ajax_invite_new_researcher',
+	'page arguments' => array(3),
 	'access callback' => '_current_user_access_edit_research_page',
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
@@ -419,7 +430,10 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 	drupal_add_js(array('research_project' => array('tool_refresh' => url("researchpage/tools/refresh/"))), 'setting');
 	//add setting Drupal.settings.research_project.research_window
 	drupal_add_js(array('research_project' => array('research_window' => url("researchpage/researcher/window/"))), 'setting');
-	
+	//add setting Drupal.settings.research_project.research_email_check
+	drupal_add_js(array('research_project' => array('research_email_check' => url("researchpage/researcher/checkemail/"))), 'setting');
+	//add setting Drupal.settings.research_project.research_invite_new
+	drupal_add_js(array('research_project' => array('research_invite_new' => url("researchpage/researcher/invitenew/"))), 'setting');
 	
 	drupal_add_js($path.'/jquery/jquery-ui.min.js');
 	drupal_add_js($path.'/research_project.js');

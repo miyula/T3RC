@@ -147,11 +147,13 @@ function invite_new_researcher_form(&$form_state,$pid=0){
         '#title' => t('Email'),
         '#description' => t("Invited researchers email address"),
         '#required' => TRUE,
+        '#attributes' => array('onblur'=>"check_researcher_email_address($pid)"),
+        '#suffix' => '<div id="check-research-email-result-div" class="form-check-result"></div>'
     );
-    $form['description'] = array(
+    $form['introduction'] = array(
         '#type' => 'textfield',
-        '#title' => t('Position description'),
-        '#description' => t('A short description of this researcher in this project. The content will be shown on project page'),
+        '#title' => t('Position Introduction'),
+        '#description' => t('A short introduction for this researcher in your project. The content will be shown on project page'),
         '#required' => TRUE,
     );
     $form['weight'] = array(
@@ -160,7 +162,7 @@ function invite_new_researcher_form(&$form_state,$pid=0){
         '#default_value' => 0,  
     );
     $form['submit'] = array(
-        '#value' => '<input type="button" value="Invite" onclick="invite_new_researcher()" />',
+        '#value' => '<input id="invite_new_researcher_button" type="button" value="Invite" onclick="invite_new_researcher('.$pid.')" disabled="disabled"  />',
     );
     
     return $form;
@@ -169,17 +171,71 @@ function invite_new_researcher_form(&$form_state,$pid=0){
 /**
  * Menu callback for researchpage/researcher/checkemail/%
  */
-function check_invited_researcher_email(){
+function check_invited_researcher_email($pid){
     drupal_set_header('Content-Type: text/plain; charset: utf-8');
     $email = $_POST['email'];
-    if(empty($email)){
+    if(valid_email_address($email)!=1){
         $status = 0;
-        $message = "Please give an email address";
+        $message = "Please give a valid email address";
     }else{
-        
+        //find account
+        $account_sql = "SELECT uid, name FROM {users} WHERE mail='%s'";
+        if($user = db_fetch_object(db_query($account_sql,$email))){
+            //check if this user has already been invited
+            $invited_check_sql = "SELECT id FROM {project_researchers} WHERE uid=%d AND pid=%d";
+            if(db_result(db_query($invited_check_sql,$user->uid,$pid))){
+                $status = 0;
+                $message = "This researcher has already been invited into this project";
+            }else{
+                $status = 1;
+                $message = "You are inviting this person: {$user->name}.";
+            }
+        }else{
+            $status = 0;
+            $message = "Can not find this user";
+        }
     }
 
     printf('{"status":%d, "message":"%s"}',$status,$message);    
+}
+
+/**
+ * Menu callback for researchpage/researcher/invitenew/%
+ */
+function ajax_invite_new_researcher($pid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    
+    $email = $_POST['email'];
+    $intro = $_POST['introduction'];
+    
+    //check email address and introduction
+    if(valid_email_address($email)!=1||empty($intro)){
+        $status = 0;
+        $message = "Invalid input.";
+    }else{
+        //find account
+        $account_sql = "SELECT uid, name FROM {users} WHERE mail='%s'";
+        if($user = db_fetch_object(db_query($account_sql,$email))){
+            //check if this user has already been invited
+            $invited_check_sql = "SELECT id FROM {project_researchers} WHERE uid=%d AND pid=%d";
+            if(db_result(db_query($invited_check_sql,$user->uid,$pid))){
+                $status = 0;
+                $message = "This researcher has already been invited into the project.";
+            }else{
+                $insert_sql = "INSERT INTO {project_researchers}"
+                             ."(uid,pid,created,changed,introduction) "
+                             ."VALUES(%d,%d,now(),now(),'%s')";
+                db_query($insert_sql,$user->uid,$pid,$intro);
+                $status = 1;
+                $message = "Researcher has been added.";
+            }
+        }else{
+            $status = 0;
+            $message = "Can not find this user.";
+        }
+    }
+    
+    printf('{"status":%d,"message":"%s"}',$status,$message);
 }
 
 ?>

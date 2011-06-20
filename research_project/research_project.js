@@ -75,6 +75,47 @@ function show_new_researcher_window(id){
 /**
  * Button onclick function
  */
-function invite_new_researcher(){
-    
+function invite_new_researcher(id){
+    //check forms
+    var email = $('#edit-email').val();
+    var intro = $.trim($('#edit-introduction').val());
+    if(intro){
+        var url = Drupal.settings.research_project.research_invite_new+id;
+        $.post(url,{"email":email,"introduction":intro},function(data){
+            var result = jQuery.parseJSON(data);
+            if(result.status){
+                if(resutl.status==1){
+                    $("#edit-dialog-div").dialog('close');
+                }else{
+                    alert(result.message);
+                }               
+            }else{
+                alert("Unknow error happened.");
+            }
+        });
+    }else{
+        alert("Please input a introduction for your researcher.");
+    }
+}
+
+/**
+ *
+ */
+function check_researcher_email_address(id){
+    var email = $('#edit-email').val();
+    var url = Drupal.settings.research_project.research_email_check+id;
+    $.post(url,{"email":email},function(data){
+        var result = jQuery.parseJSON(data);
+        if(result.message){
+            if(result.status==1){
+                $("#check-research-email-result-div").css('color','blue');
+                $("#invite_new_researcher_button").removeAttr('disabled');
+            }else{
+                $("#invite_new_researcher_button").attr('disabled','disabled');
+                $("#check-research-email-result-div").css('color','red');
+            }
+            $("#check-research-email-result-div").html(result.message);
+            
+        }        
+    });
 }
