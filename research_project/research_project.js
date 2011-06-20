@@ -1,0 +1,80 @@
+//this js required jquery.js and jquery-window plugin
+
+$(function(){
+    $("#edit-dialog-div").dialog({
+        autoOpen: false,
+        minWidth: 520,
+        modal: true
+    });    
+});
+
+/**
+ * Button onclick function
+ * Open select tools dialog
+ * @param
+ *  id: number, the id of project
+ */
+function edit_tools(id){
+    //empty dialog content
+    $("#edit-dialog-content").html("");
+    
+    var $dialog = $("#edit-dialog-div");
+    $dialog.dialog( "option", "title", 'Select research tools');
+    $dialog.dialog('open');
+    $("#onloading-div").css('display','block');
+    
+    var url = Drupal.settings.research_project.tool_window+id;
+    $.get(url,function(data){
+        $("#onloading-div").css('display','none');
+        $("#edit-dialog-content").css('display','block');
+        $("#edit-dialog-content").html(data);
+    });  
+}
+
+/**
+ * Button onclick function
+ * Link selected tools with the project
+ * @param
+ *  id: number, the id of project
+ */
+function save_selected_tools(id){
+    var check_list = "";
+    $('input[name^="tool_checkbox_"]:checked').each(function(){
+        check_list+= $(this).val()+",";        
+    });
+    
+    var url = Drupal.settings.research_project.tool_changed+id;
+    $.post(url,{"checkeds":check_list},function(data){
+        var result = jQuery.parseJSON(data);
+        if(result.status==1){
+            $("#edit-dialog-div").dialog('close');
+            var refresh_url = Drupal.settings.research_project.tool_refresh+id;
+            $('#tools-list').load(refresh_url);
+            //alert(data);
+        }else{
+            alert("Failed to save changes");
+        }
+    });
+}
+
+/**
+ * Button onclick function
+ * Show add new researcher window
+ * @param
+ *  id: number, the id of project
+ */
+function show_new_researcher_window(id){    
+    var $dialog = $("#edit-dialog-div");
+    $dialog.dialog( "option", "title", 'Invite new researhers');
+    $dialog.dialog('open');
+    $("#onloading-div").css('display','none');
+    var url = Drupal.settings.research_project.research_window+id
+    $("#edit-dialog-content").load(url);
+}
+
+/**
+ * Button onclick function
+ */
+function invite_new_researcher(){
+    
+}

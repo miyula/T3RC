@@ -1,5 +1,5 @@
 .sub-title{
-    margin: 0px 20px 0px 10px;
+    margin: 0px 20px 0px 0px;
 }
 .action-button{
     margin: 3px 5px;
@@ -12,11 +12,11 @@
 }
 .r-page-part{
     margin: 10px 0px;
-    border: 1px solid #D3E7F4; 
+    border: 1px solid #D3E7F4;
 }
 .r-page-part h2{
     background-color: #D3E7F4;
-    padding: 3px 0px;
+    padding: 3px 10px;
 }
 .r-page-part p{
     margin-left:10px;
@@ -32,4 +32,8 @@
 }
 .staff-intro{
     margin-left:10px;
+}
+#invited_emails_textarea{
+    width:420px;
+    height:100px;
 }

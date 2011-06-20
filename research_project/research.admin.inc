@@ -134,13 +134,14 @@ function _research_tool_info_submit($form, &$form_state){
                  ."(name,description,guidance, download, logo, created, changed) "
                  ."VALUES('%s','%s','%s','%s','%s',now(),now())";
         db_query($insert,$name,$description,$guidance,$download,$logo);
+        drupal_goto("admin/content/researchtools");
     }else{
         //Edit
         $update = "UPDATE {research_tool} "
                  ."SET name='%s', description='%s', guidance='%s', download='%s', logo='%s', changed=now() "
                  ."WHERE id=%d";
         db_query($update,$name,$description,$guidance,$download,$logo,$id);
-        
+        drupal_goto("research/tools/$id");
     }
 }
 

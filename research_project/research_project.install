@@ -92,6 +92,11 @@ function research_project_schema(){
                 'length' => 120,
                 'not null' => TRUE,
             ),
+            'provider' => array(
+                'type' => 'varchar',
+                'lenght' => 255,
+                'not null' => TRUE,
+            ),
             'description' => array(
                 'type' => 'text',
                 'not null' => TRUE,
@@ -141,10 +146,6 @@ function research_project_schema(){
             ),
         ),
         'primary key' => array('id'),
-        'unique keys' => array(
-            'pid' => array('pid'),
-            'tid' => array('tid'),
-        ),
     );
     
     $schema['project_persons'] = array(

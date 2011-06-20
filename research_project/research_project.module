@@ -49,9 +49,65 @@ function research_project_menu(){
         'file' => 'research.admin.inc',
     );
     
+    //sub pages for research page
+    
+    //for admin tools
+    $menu['researchpage/tools/window/%'] = array(
+	'title' => t('Select research tools'),
+        'description' => t('Select research tools for the research project.'),
+        'page callback' => 'select_research_tools_window',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/tools/changed/%'] = array(
+	'title' => t('Save tools changed'),
+	'description' => t('Ajax for saving selected tools changed.'),
+	'page callback' => 'ajax_save_researchpage_tool_changed',
+	'page arguments' => array(3),
+	'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/tools/refresh/%'] = array(
+	'title' => t('Refresh tool list'),
+	'description' => t('Ajax for refresh tool list.'),
+	'page callback' => 'ajax_refresh_tool_list',
+	'page arguments' => array(3),
+	'access callback' => '_current_user_access_view_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    
+    //for admin researchers
+    $menu['researchpage/researcher/window/%'] = array(
+	'title' => t('Add new researcher'),
+        'description' => t('Invite new researcher to the project.'),
+        'page callback' => 'add_researcher_window',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/researcher/checkemail/%'] = array(
+	'title' => t('Check researcher email'),
+	'description' => t('Return the result if this account can be invited to this project'),
+	'page callback' => 'check_invited_researcher_email',
+	'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    
     //Research Tools
     $menu['research/tools/%'] =array(
-	'title' => t('Research Tool'),
+	'title arguments' => array(2),
+	'title callback' => 'fetch_research_tool_name',
 	'description' => t('Display the detail of the given research tool'),
 	'page callback' => 'display_research_tool_page',
 	'page arguments' => array(2),
@@ -61,13 +117,138 @@ function research_project_menu(){
     return $menu;
 }
 
+
+/**
+ * Implementation of hook_perm().
+ */
+function research_project_perm(){
+    return array(
+	"Edit research tools", //access to admin research tools page, add, edit, and delete research tools
+	"Create research page",
+	"Edit research page",
+	"Delete research page",
+	"Send SMS message",
+	"Send email",
+    );
+}
+
+/** 
+ * Implements hook_access()
+ */
+function research_project_access($op, $node, $account) {
+  switch ($op) {
+    case 'create':
+      return user_access('Create research page', $account);
+    case 'update':
+      return _access_edit_research_page($node,$account);
+    case 'delete':
+      return (user_access('Delete any research page', $account))||(_access_edit_research_page($node,$account));
+    case "view":
+      return TRUE;
+  }
+}
+
+/**
+ * Check the account has permission to edit research page or not
+ * Who has the permission:
+ *   - Owner who creates the research page
+ *   - Researchers who in the research list
+ */
+function _access_edit_research_page($node,$account){
+    if(user_access('Edit any research page', $account)){
+	return TRUE;
+    }
+    
+    if($node->uid==$account->uid){
+	return TRUE;
+    }
+    
+    //check researcher in researcher list
+    //  status: 0, normal, 1, locked, 4 removed
+    $check_sql = "SELECT pr.id FROM {project_researchers} AS pr, {research_project_page} AS rp "
+		."WHERE rp.nid=%d AND pr.pid=rp.id AND pr.uid=%d AND pr.status=0";
+    if(db_result(db_query($check_sql, $node->nid, $account->uid))){	
+	return TRUE;
+    }
+    
+    return FALSE;
+}
+
+/**
+ * Check if current user has permission to edit research page
+ */
+function _current_user_access_edit_research_page($pid){
+    //get nid and uid of the project page
+    $sql = "SELECT r.nid nid, n.uid uid FROM {research_project_page} AS r, {node} AS n WHERE r.id=%d AND r.nid=n.nid";
+    if($res=db_fetch_object(db_query($sql,$pid))){
+	global $user;
+	return _access_edit_research_page($res,$user);
+    }
+    return FALSE;
+}
+
+/**
+ *
+ */
+function _current_user_access_view_research_page($pid){
+    //TODO
+    global $user;
+    
+    //check activity
+    if(!user_access("access content")&&$user->status!=1){
+	return FALSE;
+    }
+    
+    //check if user in researcher list
+    
+    //check if the current page is open
+    
+    return TRUE;
+}
+
+/**
+ * Check the account has permission to delete research page or not
+ * Who has the permission:
+ *   - Owner who create the research page
+ */
+function _access_delete_research_page($node,$account){
+    if($node->uid==$account->uid){
+	return TRUE;
+    }
+    
+    return FALSE;
+}
+
+/**
+ * Title callback for research/tools/%
+ * Get tool name
+ */
+function fetch_research_tool_name($tool_id){
+    //get tool info
+    $sql = "SELECT name from {research_tool} WHERE id=%d";
+    if($tool = db_fetch_object(db_query($sql,$tool_id))){
+        return "Tool - {$tool->name}";
+    }else{
+        $content="No such tool";
+        return $content;
+    }
+}
+
 /**
  * Menu callback for research/tools/%
  */
 function display_research_tool_page($tool_id){
+    drupal_add_css(drupal_get_path('module', 'research_project') .'/research_project.css');
     //get tool info
     $sql = "SELECT id, name, description, guidance, download, logo from {research_tool} WHERE id=%d";
     if($tool = db_fetch_object(db_query($sql,$tool_id))){
+	//check user permission
+	if(user_access("Edit research tools")){
+	    $tool->edit_permission = TRUE;
+	    $tool->edit_link = l('[Edit]',"admin/content/researchtools/edit/{$tool->id}");
+	}else{
+	    $tool->edit_permission = FALSE;
+	}
         return theme('research_tool_page', $tool);
     }else{
         $content="<p><font color='red'>No tool info can be found.</font></p>";
@@ -76,14 +257,6 @@ function display_research_tool_page($tool_id){
 }
 
 
-/**
- * Implementation of hook_perm().
- */
-function research_project_perm(){
-    return array(
-	"Edit research tools", //access to admin research tools page, add, edit, and delete research tools
-    );
-}
 /**
  * Implements hook_node_info()
  */
@@ -212,10 +385,11 @@ function research_project_delete($node){
  */
 function research_project_load($node){
     //get project page info
-    $page_sql = "SELECT project_code, invitation_way, status FROM {research_project_page} WHERE nid=%d";
+    $page_sql = "SELECT id, project_code, invitation_way, status FROM {research_project_page} WHERE nid=%d";
     $result = db_query($page_sql, $node->nid);
     if($result){
 	$page = db_fetch_object($result);
+	$node->pid = $page->id;
 	$node->project_code = $page->project_code;
 	$node->invitation = $page->invitation_way;
 	$node->pstatus = $page->status;
@@ -227,11 +401,41 @@ function research_project_load($node){
  * Implementation of hook_view().
  */
 function research_project_view($node, $teaser = FALSE, $page = FALSE) {
-    
-    drupal_add_css(drupal_get_path('module', 'research_project') .'/research_project.css');
+    $path = drupal_get_path('module', 'research_project');
+    drupal_add_css($path.'/research_project.css');
     
     $node = node_prepare($node, $teaser); // get it ready for display
-  
+    
+    //check current user permission
+    global $user;
+    $node->edit_permission = _access_edit_research_page($node, $user);
+    if($node->edit_permission){
+	drupal_add_css($path.'/jquery/jquery-ui.css');
+	//add setting Drupal.settings.research_project.tool_window
+	drupal_add_js(array('research_project' => array('tool_window' => url("researchpage/tools/window/"))), 'setting');
+	//add setting Drupal.settings.research_project.tool_changed
+	drupal_add_js(array('research_project' => array('tool_changed' => url("researchpage/tools/changed/"))), 'setting');
+	//add setting Drupal.settings.research_project.tool_refresh
+	drupal_add_js(array('research_project' => array('tool_refresh' => url("researchpage/tools/refresh/"))), 'setting');
+	//add setting Drupal.settings.research_project.research_window
+	drupal_add_js(array('research_project' => array('research_window' => url("researchpage/researcher/window/"))), 'setting');
+	
+	
+	drupal_add_js($path.'/jquery/jquery-ui.min.js');
+	drupal_add_js($path.'/research_project.js');
+    }
+    
+    //get tools list
+    $tool_sql = "SELECT t.id id, t.name name, t.logo logo "
+               ."FROM {project_tools} AS p, {research_tool} AS t "
+               ."WHERE p.pid=%d AND t.id=p.tid";
+    $res1 = db_query($tool_sql,$node->pid);
+    $tool_list = array();
+    while($tool = db_fetch_array($res1)){
+	$tool_list[] = $tool;
+    }
+    $node->tool_list = $tool_list;
+    
     // Add theme stuff here
     $node->content['research_project_page'] = array(
 	    '#value' => theme('research_project_page', $node),
@@ -249,12 +453,14 @@ function research_project_theme() {
 	    'template' => 'research_project_page',
 	    'arguments' => array(
 		'node' => NULL,
+		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
 	    ),
 	),
 	'research_tool_page' => array(
 	    'template' => 'research_tool_page',
 	    'arguments' => array(
 		'tool' => NULL,
+		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
 	    ),
 	),
     );
