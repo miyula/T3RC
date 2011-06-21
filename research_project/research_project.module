@@ -115,6 +115,18 @@ function research_project_menu(){
         'file' => 'research.pages.inc',
     );
     
+    //For inviting people
+    $menu['researchpage/participants/page/%'] = array(
+	'title' => t('Invite new people'),
+        'description' => t('Invite new people to participate the project.'),
+        'page callback' => 'invite_participants_page',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    
     //Research Tools
     $menu['research/tools/%'] =array(
 	'title arguments' => array(2),
@@ -341,7 +353,8 @@ function research_project_form(&$node){
     //  0. prepairing   1. starting  2.closed, 4. deleted
     $status_options = array(
 	0 => 'Prepairing - only researchers can visit project page.',
-	1 => 'Start - persen can visit project page and join the project.',
+	1 => 'Open
+	- persen can visit project page and join the project.',
 	2 => 'Closed - persen can visit project page but join project closed.',
     );
     $form['pstatus'] = array(
@@ -450,6 +463,28 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     }
     $node->tool_list = $tool_list;
     
+    //get researcher list 
+    $researcher_sql = "SELECT r.uid uid, introduction, u.name name "
+                     ."FROM {project_researchers} AS r, {users} AS u "
+                     ."WHERE r.pid=%d AND u.uid=r.uid";
+    $res2 = db_query($researcher_sql,$node->pid);
+    $researcher_list = array();
+    while($researcher = db_fetch_array($res2)){
+	$researcher_list[] = $researcher;
+    }
+    $node->researcher_list = $researcher_list;
+    
+    //get partipatents
+    $persons_count = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d";
+    if($count = db_result(db_query($persons_count,$node->pid))){
+	$node->partipatent_count = $count;
+    }
+    $get_first_five_person = "SELECT p.uid uid, p.status status "
+                            ."FROM {project_persons} AS p, {users} AS u "
+			    ."WHERE p.pid=%d AND u.uid=p.uid "
+			    ."ORDER BY p.created DESC "
+			    ."";
+    
     // Add theme stuff here
     $node->content['research_project_page'] = array(
 	    '#value' => theme('research_project_page', $node),
@@ -486,21 +521,101 @@ function research_project_theme() {
  * @param
  *   $mail_content
  *      string
+ * @param
+ *   $split
+ *      string
  * @return
  *   Array
  */
-function splite_mail_list($mail_content){
+function splite_mail_list($mail_content,$split){
     $mail_list = array();
-    $mail_token = strtok($mail_content,";");
+    $mail_token = strtok($mail_content,$split);
     while($mail_token!==false){
         $email = trim($mail_token);
         if(!empty($email)&&valid_email_address($email)){
             $mail_list[] = $email;
         }
-        $mail_token = strtok(";");
+        $mail_token = strtok($split);
     }
     return $mail_list;
 }
+
+/**
+ * Generate invitation template
+ * @param
+ *  $type
+ *     string, type of template, email/sms
+ * @param
+ *  $pid
+ *     int, project id
+ */
+function generate_invitation_template($type,$pid){
+    //get project info
+    $sql = "SELECT title from {node} AS n, {research_project_page} AS r "
+          ."WHERE r.id=%d AND r.nid=n.nid";
+    if($project=db_fetch_object(db_query($sql,$pid))){
+	$name = $project->title;
+    }
+    $link = "http://".$_SERVER['HTTP_HOST'].url("node/$pid");
+    if($type=="email"){
+	$content.= "<p>Hi,</p>";
+	$content.= "<p>You are invited to join project $name. Visit $link to get more detials.</p>";
+	$content.= "<P>Your login account is your email address, first login password is @password.<P>";
+	$content.= "<p>Kind regards,</p>";
+	$content.= "<p>$name</p>";
+    }else if($type="sms"){
+	$content.= "You are invited to join project $name. You can visit $link to get more details.Your login account is your phone number, first login password is @password.";
+    }
+    
+    
+    return $content;
+}
+
+/**
+ * get user by email, if no user found, generate new one
+ * @param
+ *  $email
+ *    String, email address
+ * @return
+ *  user object
+ */
+function get_user_by_mail($mail,$project){
+    $get_user_sql = "SELECT uid, name, mail, pass FROM {users} WHERE LOWER(mail) = LOWER('%s')";
+    $user = db_fetch_object(db_query($get_user_sql, $mail));
+    
+    $role = 'Person';
+    //new user
+    if($user==FALSE){
+	
+	$sql = "SELECT rid FROM {role} WHERE name='%s'";
+	$id = db_result(db_query($sql,$role));
+	$roles[$id] = $role;
+        $default_pass = genRandomString(6);   
+	$user_info = array(
+            'name' => $mail,
+            'mail' => $mail,
+            'pass' => $default_pass,
+	    'roles' => $roles,
+            'status' => 1,
+        );
+             
+        $user = user_save($account,$user_info);        
+	watchdog('New user', 'A new user(@mail) has been added by project @project', array('@mail' => $mail,'@project' => $project), WATCHDOG_INFO);   
+	$user->new_user = TRUE;
+	$user->pass = $default_pass;
+    }else{
+	//If person not in user's roles, add it
+	$sql = "SELECT rid FROM {role} WHERE name='%s'";
+	$id = db_result(db_query($sql,$role));
+	$check = "SELECT COUNT(uid) FROM {users_roles} WHERE uid=%d AND rid=%d";
+	if(db_result(db_query($check,$user->uid,$id))==0){
+	    $insert = "INSERT into {users_roles}(uid,rid) VALUES(%d,%d)";
+	    db_query($insert,$user->uid,$id);   
+	}
+    }
+    return $user;
+}
+
 
 /**
  * Send project invite email
@@ -703,3 +818,31 @@ function side_send_http_mail($to_mail,$subject,$body){
 	drupal_set_message("Failed to send mail to $to_mail. ".$e->getMessage(),"error");
     }
 }
+
+/**
+ * Generate Random String
+ * Code from http://www.ccvita.com/25.html
+ */
+function genRandomString($len) 
+{ 
+    $chars = array( 
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k",  
+        "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",  
+        "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G",  
+        "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R",  
+        "S", "T", "U", "V", "W", "X", "Y", "Z", "0", "1", "2",  
+        "3", "4", "5", "6", "7", "8", "9" 
+    ); 
+    $charsLen = count($chars) - 1; 
+ 
+    shuffle($chars); 
+     
+    $output = ""; 
+    for ($i=0; $i<$len; $i++) 
+    { 
+        $output .= $chars[mt_rand(0, $charsLen)]; 
+    } 
+ 
+    return $output; 
+ 
+} 

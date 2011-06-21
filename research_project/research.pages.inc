@@ -238,4 +238,108 @@ function ajax_invite_new_researcher($pid){
     printf('{"status":%d,"message":"%s"}',$status,$message);
 }
 
+/**
+ * Menu callback for researchpage/participants/page/%
+ */
+function invite_participants_page($pid){
+    $path = drupal_get_path('module', 'research_project');
+    drupal_add_js($path.'/invitation_page.js');
+    $content = drupal_get_form('invite_participants_form',$pid);
+    return $content;
+}
+/**
+ * Invite participants form
+ */
+function invite_participants_form(&$form_state,$pid=0){
+    $form['project'] = array(
+        '#type' => 'hidden',
+        '#value' => $pid,
+    );
+    $inform_option = array(
+        'email' => 'By email',
+        'sms' => 'By SMS',
+    );
+    $form['invite-way'] = array(
+        "#type" => 'radios',
+        "#title" => t('Way to inform'),
+        "#description" => t('The way to inform persons about invitations'),
+        '#options' => $inform_option,
+        '#default_value' => 'email',
+        '#attributes' => array('onchange'=>'invite_way_onchange()'),
+    );
+    $form['invitation-list'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Invitation List'),
+        '#description' => t('Please split each item by ",". e.g. +358449893823,+35832423235,+358233549509'),
+        '#required' => TRUE,
+    );
+    $form['message'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Invitating message'),
+        '#description' => t('This message will be sent with the invitation content'),
+        '#required' => TRUE,
+        '#default_value' => generate_invitation_template('email',$pid),
+    );
+    $form['email-message'] = array(
+        '#type' => 'hidden',
+        '#value' => generate_invitation_template('email',$pid),
+    );
+    $form['sms-message'] = array(
+        '#type' => 'hidden',
+        '#value' => generate_invitation_template('sms',$pid),
+    );
+    
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Send invitation',
+    );
+    
+    return $form;
+}
+/**
+ * Handle validate form when sumbit
+ */
+function invite_participants_form_validate($form, &$form_state){
+    
+}
+/**
+ * Handle submit operations
+ */
+function invite_participants_form_submit($form, &$form_state){
+    $pid = $form_state['values']['project'];
+    $way = $form_state['values']['invite-way'];
+    $lists = $form_state['values']['invitation-list'];
+    $message = $form_state['values']['message'];
+    
+    //get project info
+    $sql = "SELECT n.nid nid, title from {node} AS n, {research_project_page} AS r "
+          ."WHERE r.id=%d AND r.nid=n.nid";
+    if($project=db_fetch_object(db_query($sql,$pid))){
+	$name = $project->title;
+    }
+    
+    if($way=='email'){
+        $mail_list = splite_mail_list($lists,',');
+        foreach($mail_list as $mail){
+            //find account, if null create it.
+            $user = get_user_by_mail($mail,$name);
+            //check if user has already linked with project
+            $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
+            if(db_result(db_query($check,$pid,$user->uid))>0){
+                continue;
+            }
+            //bind user with project
+            $insert = "INSERT INTO {project_persons}"
+                     ."(uid,pid,status,created,changed) "
+                     ."VALUES(%d,%d,0,now(),now())";
+            db_query($insert,$user->uid,$pid);
+            //send email
+            $subject =  t('@project invites you to join their research',array("@project"=>$name));
+            $body = t($message);
+            side_send_http_mail($mail,$subject,$body);
+        }
+    }
+    drupal_goto("node/{$project->nid}");
+}
+
 ?>

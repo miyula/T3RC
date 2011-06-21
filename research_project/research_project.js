@@ -99,7 +99,7 @@ function invite_new_researcher(id){
 }
 
 /**
- *
+ * Handle when email address changed
  */
 function check_researcher_email_address(id){
     var email = $('#edit-email').val();

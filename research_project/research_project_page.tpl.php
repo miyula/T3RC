@@ -33,17 +33,26 @@
     <?php } ?>
     </h2>
     <ul id="researchers-list">
-        <li><img class="staff-photo" src="http://www.adminvc.com/images/user_default.gif" alt=""/><span class="staff-name"><a href="" target="_blank">Firstname, Lastname</a></span><span class="staff-intro">(Posititon introduction......)</span></li>
+    <?php foreach($node->researcher_list as $researcher) { ?>
+        <li>
+            <img class="staff-photo" src="<?=$module_path?>/images/user_default.gif" alt=""/>
+            <span class="staff-name"><a href="<?=$researcher['uid']?>" target="_blank"><?=$researcher['name']?></a></span>
+            <span class="staff-intro">(<?=$researcher['introduction']?>)</span></li>
+    <?php } ?>
     </ul>
 </div>
 <div id="participants-div" class="r-page-part">
     <h2>
         <span class="sub-title">Participants</span>
     <?php if($node->edit_permission){ ?>
-        <span class="action-button">Add</span><span class="action-button">Edit</span>
+        <span class="action-button"><a href="<?=url("researchpage/participants/page/{$node->pid}")?>">Invite new</a></span>
     <?php } ?>
     </h2>
-    <p>There are 100 people joined in this project.</p>
+    <?php if(isset($node->partipatent_count)) { ?>
+    <p>There are <?=$node->partipatent_count?> people joined in this project. </p>
+    <?php }else{ ?>
+    <p>No information.</p>
+    <?php } ?>
 </div>
 <div id="reports-div" class="r-page-part">
     <h2>

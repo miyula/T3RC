@@ -182,10 +182,6 @@ function research_project_schema(){
             ),
         ),
         'primary key' => array('id'),
-        'unique keys' => array(
-            'pid' => array('pid'),
-            'uid' => array('uid'),
-        ),
     );
     
     $schema['project_researchers'] = array(
