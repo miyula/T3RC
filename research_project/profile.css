@@ -1,0 +1,49 @@
+#user-card:after{
+    content: "";
+    height: 0;
+    display: block;
+    clear: both;
+}
+#user-card-left{
+    float: left;
+    overflow: hidden;
+    display: inline;
+}
+#user-card-right{
+    text-align:center;
+    width:300px;
+    border:1px solid #777;
+    float: right;
+    overflow: hidden;
+    display: inline;
+    margin: 20px 80px 20px auto;
+}
+#user-card-right h2{
+    margin-top:15px;
+}
+#user-card-right dl{
+    width: 90px;
+    float: left;
+    overflow: hidden;
+    display: inline;
+    margin: 0px;
+}
+#user-card-right dd{
+    font-weight: 900;
+    font-size: 35px;
+    margin: auto auto;    
+}
+#user-card-right dt{
+    font-size: 12px;
+    color: #666;
+}
+#user-card-right-info:after{
+    content: "";
+    height: 0;
+    display: block;
+    clear: both;
+}
+#user-card-right-info{
+    width:200px;
+    margin: 10px auto;
+}

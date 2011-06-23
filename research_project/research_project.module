@@ -161,16 +161,27 @@ function research_project_menu(){
     );
     
     //user profile pages
-    $menu['user/profiles/%'] = array(
-	'title arguments' => array(2),
+    $menu['user/profiles/%user'] = array(
+	'title arguments' => array(2,'user'),
 	'title callback' => 'fetch_user_profiles_title',
 	'description' => t('Display user profiles page'),
 	'page callback' => 'display_user_profiles_page',
-	'page arguments' => array(2),
-	'access arguments' => user_is_logged_in,
+	'page arguments' => array(2,'user'),
+	'access callback' => 'user_is_logged_in',
 	'type' => MENU_CALLBACK,
 	'file' => 'profile.pages.inc',
     );
+    $menu['user/profiles/%user/edit'] = array(
+	'title' => t('Edit profiles'),
+	'description' => t('Edit user profiles'),
+	'page callback' => 'edit_user_profiles_page',
+	'page arguments' => array(2,'user'),
+	'access callback' => 'user_edit_access',
+	'access arguments' => array(2,'user'),
+	'type' => MENU_CALLBACK,
+	'file' => 'profile.pages.inc',
+    );
+    
     
     return $menu;
 }
@@ -178,10 +189,9 @@ function research_project_menu(){
 /**
  * Title callback for user/profiles/%
  */
-function fetch_user_profiles_title($uid){
+function fetch_user_profiles_title($user){
     //get username
-    $user = user_load($uid);
-    if(_access_view_detail_user_info($uid)){
+    if(_access_view_detail_user_info($user->uid)){
 	return $user->name."(*)";
     }else{
 	return $user->name;
@@ -424,8 +434,7 @@ function research_project_form(&$node){
     //  0. prepairing   1. starting  2.closed, 4. deleted
     $status_options = array(
 	0 => 'Prepairing - only researchers can visit project page.',
-	1 => 'Open
-	- persen can visit project page and join the project.',
+	1 => 'Open - persen can visit project page and join the project.',
 	2 => 'Closed - persen can visit project page but join project closed.',
     );
     $form['pstatus'] = array(
@@ -588,6 +597,13 @@ function research_project_theme() {
 		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
 	    ),
 	),
+	'project_user_profile_page' => array(
+	    'template' => 'project_user_profile_page',
+	    'arguments' => array(
+		'person' => NULL,
+		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+	    ),
+	),
     );
 }
 
@@ -602,7 +618,18 @@ function research_project_user($op, &$edit, &$user){
     }
 }
 
-
+/**
+ * load user profiles information to user object
+ * @param
+ *  &$user
+ *    object, user
+ */
+function load_user_profiles(&$user){
+    $sql = "SELECT phone, firstname, lastname, photo, birthday, gender FROM {person_profiles} WHERE uid=%d";
+    if($profile=db_fetch_object(db_query($sql,$user->uid))){
+        $user->profiles = $profile;        
+    }
+}
 
 /**
  * Splite the mail list into array from mail content

@@ -94,8 +94,8 @@ function research_project_schema(){
             ),
             'provider' => array(
                 'type' => 'varchar',
-                'lenght' => 255,
-                'not null' => TRUE,
+                'length' => 255,
+                'not null' => FALSE,
             ),
             'description' => array(
                 'type' => 'text',
@@ -292,9 +292,14 @@ function research_project_schema(){
                 'type' => 'datetime',
                 'not null' => FALSE,
             ),
-            'sex' => array(
+            'gender' => array(
                 'type' => 'varchar',
                 'length' => 1,
+                'not null' => FALSE,
+            ),
+            'photo' => array(
+                'type' => 'varchar',
+                'length' => 255,
                 'not null' => FALSE,
             ),
             'created' => array(
