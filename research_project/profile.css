@@ -1,3 +1,6 @@
+#user-card{
+    margin: 10px auto;
+}
 #user-card:after{
     content: "";
     height: 0;
@@ -5,6 +8,26 @@
     clear: both;
 }
 #user-card-left{
+    font-size: 14px;
+    float: left;
+    overflow: hidden;
+    display: inline;
+}
+#user-card-left dl:after{
+    content: "";
+    height: 0;
+    display: block;
+    clear: both;
+}
+#user-card-left dt{
+    color: #999;
+    font-weight: bold;
+    width: 90px;
+    float: left;
+    overflow: hidden;
+    display: inline;
+}
+#user-card-left dd{
     float: left;
     overflow: hidden;
     display: inline;

@@ -192,7 +192,11 @@ function research_project_menu(){
 function fetch_user_profiles_title($user){
     //get username
     if(_access_view_detail_user_info($user->uid)){
-	return $user->name."(*)";
+	load_user_profiles($user);
+	if(!empty($user->profiles->firstname)||!empty($user->profiles->lastname)){
+	    $real = " ({$user->profiles->firstname}, {$user->profiles->lastname})";
+	}
+	return $user->name.$real;
     }else{
 	return $user->name;
     }
@@ -207,8 +211,8 @@ function research_project_perm(){
     return array(
 	"Edit research tools", //access to admin research tools page, add, edit, and delete research tools
 	"Create research page",
-	"Edit research page",
-	"Delete research page",
+	"Edit any research page",
+	"Delete any research page",
 	"Send SMS message",
 	"Send email",
     );
@@ -615,6 +619,7 @@ function research_project_user($op, &$edit, &$user){
     if ($op == 'view') {
 	//redirect to user/profiles/%
 	drupal_goto("user/profiles/{$user->uid}");
+	//print_r($user->content);
     }
 }
 
@@ -625,7 +630,7 @@ function research_project_user($op, &$edit, &$user){
  *    object, user
  */
 function load_user_profiles(&$user){
-    $sql = "SELECT phone, firstname, lastname, photo, birthday, gender FROM {person_profiles} WHERE uid=%d";
+    $sql = "SELECT phone, firstname, lastname, photo, ((YEAR(CURDATE())-YEAR(birthday))-(RIGHT(CURDATE(),5)<RIGHT(DATE(birthday),5))) age, YEAR(birthday) byear, MONTH(birthday) bmonth, DAY(birthday) bday, gender FROM {person_profiles} WHERE uid=%d";
     if($profile=db_fetch_object(db_query($sql,$user->uid))){
         $user->profiles = $profile;        
     }

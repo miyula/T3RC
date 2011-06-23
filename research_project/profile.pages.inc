@@ -13,6 +13,14 @@ function display_user_profiles_page($person){
     //$person = user_load($uid);
     //get user profiles
     load_user_profiles($person);
+    //count user projects
+    $count_work_sql = "SELECT COUNT(id) FROM {project_researchers} WHERE uid=%d";
+    $count_work = db_result(db_query($count_work_sql,$person->uid));
+    $count_work_sql = "SELECT COUNT(nid) FROM {node} WHERE type='researchproject'AND uid=%d ";
+    $count_work+= db_result(db_query($count_work_sql,$person->uid));
+    $person->work_project = $count_work;
+    $count_participate_sql = ""
+    
     //check current user
     global $user;
     if($user->uid==$person->uid){
