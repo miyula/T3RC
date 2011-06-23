@@ -220,12 +220,14 @@ function research_project_schema(){
                 'type' => 'datetime',
                 'not null' => TRUE,
             ),
+            'weight' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
         ),
         'primary key' => array('id'),
-        'unique keys' => array(
-            'pid' => array('pid'),
-            'uid' => array('uid'),
-        ),
     );
     
     $schema['project_documents'] = array(
@@ -262,10 +264,6 @@ function research_project_schema(){
             ),            
         ),
         'primary key' => array('id'),
-        'unique keys' => array(
-            'pid' => array('pid'),
-            'nid' => array('nid'),
-        ),
     );
     
     $schema['person_profiles'] = array(

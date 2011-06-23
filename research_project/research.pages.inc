@@ -207,6 +207,7 @@ function ajax_invite_new_researcher($pid){
     
     $email = $_POST['email'];
     $intro = $_POST['introduction'];
+    $weight = (int)$_POST['weight'];
     
     //check email address and introduction
     if(valid_email_address($email)!=1||empty($intro)){
@@ -223,9 +224,9 @@ function ajax_invite_new_researcher($pid){
                 $message = "This researcher has already been invited into the project.";
             }else{
                 $insert_sql = "INSERT INTO {project_researchers}"
-                             ."(uid,pid,created,changed,introduction) "
-                             ."VALUES(%d,%d,now(),now(),'%s')";
-                db_query($insert_sql,$user->uid,$pid,$intro);
+                             ."(uid,pid,created,changed,introduction,weight) "
+                             ."VALUES(%d,%d,now(),now(),'%s',%d)";
+                db_query($insert_sql,$user->uid,$pid,$intro,$weight);
                 $status = 1;
                 $message = "Researcher has been added.";
             }
@@ -342,4 +343,32 @@ function invite_participants_form_submit($form, &$form_state){
     drupal_goto("node/{$project->nid}");
 }
 
+/**
+ * Menu callback for researchpage/researcher/refresh/%
+ */
+function ajax_refresh_researcher_list($pid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    
+    $module_path = str_replace("?q=","",url(drupal_get_path('module','research_project')));    
+    //get researcher list
+    $sql = "SELECT r.uid uid, r.introduction introduction, u.name name "
+          ."FROM {project_researchers} AS r, {users} AS u "
+          ."WHERE r.pid=%d AND r.uid=u.uid "
+          ."ORDER by r.weight ";
+    $res = db_query($sql,$pid);
+    while($researcher=db_fetch_array($res)){
+        $content.= "<li>"
+                  ."<img class='staff-photo' src='$module_path/images/user_default.gif' alt=''/>"
+                  ."<span class='staff-name'><a href='{$researcher['uid']}' target='_blank'>{$researcher['name']}</a></span>"
+                  ."<span class='staff-intro'>({$researcher['introduction']})</span>"
+                  ."</li>";    
+    }
+    print $content;
+}
+/**
+ * Menu callback for researchpage/participants/list/%
+ */
+function list_participants_page($pid){
+    
+}
 ?>

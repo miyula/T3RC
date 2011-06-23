@@ -79,13 +79,16 @@ function invite_new_researcher(id){
     //check forms
     var email = $('#edit-email').val();
     var intro = $.trim($('#edit-introduction').val());
+    var weight = $('#edit-weight').val();
     if(intro){
         var url = Drupal.settings.research_project.research_invite_new+id;
-        $.post(url,{"email":email,"introduction":intro},function(data){
+        $.post(url,{"email":email,"introduction":intro,"weight":weight},function(data){
             var result = jQuery.parseJSON(data);
             if(result.status){
-                if(resutl.status==1){
+                if(result.status==1){
                     $("#edit-dialog-div").dialog('close');
+                    var refresh = Drupal.settings.research_project.research_refresh+id;
+                    $("#researchers-list").load(refresh);
                 }else{
                     alert(result.message);
                 }               

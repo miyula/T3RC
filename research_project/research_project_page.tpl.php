@@ -37,7 +37,8 @@
         <li>
             <img class="staff-photo" src="<?=$module_path?>/images/user_default.gif" alt=""/>
             <span class="staff-name"><a href="<?=$researcher['uid']?>" target="_blank"><?=$researcher['name']?></a></span>
-            <span class="staff-intro">(<?=$researcher['introduction']?>)</span></li>
+            <span class="staff-intro">(<?=$researcher['introduction']?>)</span>
+        </li>
     <?php } ?>
     </ul>
 </div>
@@ -49,7 +50,7 @@
     <?php } ?>
     </h2>
     <?php if(isset($node->partipatent_count)) { ?>
-    <p>There are <?=$node->partipatent_count?> people joined in this project. </p>
+    <p>There are <?=$node->partipatent_count?> people joined in this project. <a href="">View them</a>.</p>
     <?php }else{ ?>
     <p>No information.</p>
     <?php } ?>

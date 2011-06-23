@@ -114,12 +114,34 @@ function research_project_menu(){
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
+    $menu['researchpage/researcher/refresh/%'] = array(
+	'title' => t('Refresh researcher list'),
+	'description' => t('Return researcher list the project'),
+	'page callback' => 'ajax_refresh_researcher_list',
+	'page arguments' => array(3),
+	'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
     
     //For inviting people
     $menu['researchpage/participants/page/%'] = array(
 	'title' => t('Invite new people'),
         'description' => t('Invite new people to participate the project.'),
         'page callback' => 'invite_participants_page',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    
+    //Participants page
+    $menu['researchpage/participants/list/%'] = array(
+	'title' => t('Participants'),
+        'description' => t('List all participants on this project'),
+        'page callback' => 'list_participants_page',
 	'page arguments' => array(3),
         'access callback' => '_current_user_access_edit_research_page',
 	'access arguments' => array(3),
@@ -137,7 +159,34 @@ function research_project_menu(){
 	'access arguments' => array("access content"),
 	'type' => MENU_CALLBACK,
     );
+    
+    //user profile pages
+    $menu['user/profiles/%'] = array(
+	'title arguments' => array(2),
+	'title callback' => 'fetch_user_profiles_title',
+	'description' => t('Display user profiles page'),
+	'page callback' => 'display_user_profiles_page',
+	'page arguments' => array(2),
+	'access arguments' => user_is_logged_in,
+	'type' => MENU_CALLBACK,
+	'file' => 'profile.pages.inc',
+    );
+    
     return $menu;
+}
+
+/**
+ * Title callback for user/profiles/%
+ */
+function fetch_user_profiles_title($uid){
+    //get username
+    $user = user_load($uid);
+    if(_access_view_detail_user_info($uid)){
+	return $user->name."(*)";
+    }else{
+	return $user->name;
+    }
+    
 }
 
 
@@ -154,6 +203,7 @@ function research_project_perm(){
 	"Send email",
     );
 }
+
 
 /** 
  * Implements hook_access()
@@ -194,6 +244,27 @@ function _access_edit_research_page($node,$account){
 	return TRUE;
     }
     
+    return FALSE;
+}
+
+
+/**
+ * Check current user has permission to view whole user profiles
+ * Who has the permission:
+ *   - user himself
+ *   - the researcher in the project him joined
+ */
+function _access_view_detail_user_info($uid){
+    //get current user
+    global $user;
+    if($user->uid==$uid){
+	return TRUE;
+    }
+    $sql = "SELECT COUNT(p.id) FROM {project_persons} AS p, {project_researchers} AS r "
+          ."WHERE p.uid=%d AND p.pid=r.pid AND r.status=0 AND r.uid=%d ";
+    if(db_result(db_query($sql,$uid,$user->uid))>0){
+	return TRUE;
+    }
     return FALSE;
 }
 
@@ -447,7 +518,9 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 	drupal_add_js(array('research_project' => array('research_email_check' => url("researchpage/researcher/checkemail/"))), 'setting');
 	//add setting Drupal.settings.research_project.research_invite_new
 	drupal_add_js(array('research_project' => array('research_invite_new' => url("researchpage/researcher/invitenew/"))), 'setting');
-	
+	//add setting Drupal.settings.research_project.research_refresh
+	drupal_add_js(array('research_project' => array('research_refresh' => url("researchpage/researcher/refresh/"))), 'setting');
+    
 	drupal_add_js($path.'/jquery/jquery-ui.min.js');
 	drupal_add_js($path.'/research_project.js');
     }
@@ -463,10 +536,13 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     }
     $node->tool_list = $tool_list;
     
+    //get project page owner
+    
     //get researcher list 
     $researcher_sql = "SELECT r.uid uid, introduction, u.name name "
                      ."FROM {project_researchers} AS r, {users} AS u "
-                     ."WHERE r.pid=%d AND u.uid=r.uid";
+                     ."WHERE r.pid=%d AND u.uid=r.uid "
+		     ."ORDER BY r.weight";
     $res2 = db_query($researcher_sql,$node->pid);
     $researcher_list = array();
     while($researcher = db_fetch_array($res2)){
@@ -514,6 +590,19 @@ function research_project_theme() {
 	),
     );
 }
+
+
+/**
+ * Implements hook_user().
+ */
+function research_project_user($op, &$edit, &$user){
+    if ($op == 'view') {
+	//redirect to user/profiles/%
+	drupal_goto("user/profiles/{$user->uid}");
+    }
+}
+
+
 
 /**
  * Splite the mail list into array from mail content
