@@ -10,6 +10,12 @@
 ?>
 <div id="user-card">
     <div id="user-card-left">
+        <dl><?php if(!empty($person->profiles->photo)){
+	    echo "<img src='{$person->profiles->photo}' class='profile-head-photo'/>";
+	}if($person->access_edit_profile) { ?>
+        <input type="button" value="Edit my profile" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/>
+        <?php } ?>
+        </dl>
         <dl>
             <dt>Name</dt>
             <dd><?=$person->profiles->firstname?> <?=$person->profiles->lastname?></dd>
@@ -30,15 +36,29 @@
             <dt>Email</dt>
             <dd><?=$person->mail?></dd>
         </dl>
-    <?php if($person->access_edit_profile) { ?>
-        <input type="button" value="Edit my profile" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/>
-    <?php } ?>
+    
     </div>
     <div id="user-card-right">
         <h2>Research Projects</h2>
         <div id="user-card-right-info">
             <dl><dd><?=$person->work_project?></dd><dt>work for</dt></dl>
-            <dl><dd>2</dd><dt>participate</dt></dl>
+            <dl><dd><?=$person->participate_project?></dd><dt>participate</dt></dl>
         </div>
     </div>
+</div>
+<div class="projects-list-div">
+    <h2>Projects working for</h2>
+    <ul class="projects-list">
+    <?php foreach($person->work_projects as $project){ ?>
+        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=$project['history']?>)</span></li>
+    <?php } ?>
+    </ul>
+</div>
+<div class="projects-list-div">
+    <h2>Projects participating in</h2>
+    <ul class="projects-list">
+    <?php foreach($person->participate_projects as $project){ ?>
+        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=$project['history']?>)</span></li>
+    <?php } ?>    
+    </ul>
 </div>

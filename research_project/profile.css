@@ -70,3 +70,7 @@
     width:200px;
     margin: 10px auto;
 }
+.profile-head-photo{
+    max-height:120px;
+    max-width: 120px;
+}

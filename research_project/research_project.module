@@ -236,6 +236,39 @@ function research_project_access($op, $node, $account) {
 }
 
 /**
+ * Check the account has permission to see user profile
+ * Who has the permission:
+ *   - User's own profile
+ *   - Reseachers in user's participated project
+ *   - Staffs in the same project
+ */
+function access_view_user_profiles($uid){
+    global $user;
+    
+    if($user->uid==$uid){
+	return TRUE;
+    }
+    
+    if(!array_search("researchers", $user->roles)){
+	return FALSE;
+    }
+    
+    $researcher_check = "SELECT COUNT(r.id) FROM {project_researchers} AS r, {project_persons} AS p "
+                       ."WHERE p.uid=%d AND p.pid=r.pid AND p.uid=%d";
+    if(db_result(db_query($researcher_check,$uid,$user->uid))>0){
+	return TRUE;
+    }		       
+    
+    $staff_check = "SELECT COUNT(r1.id) FROM {project_researchers} AS r1, {project_researchers} AS r2 "
+                  ."WHERE r2.uid=%d AND r1=%d AND r2.pid=r1.pid AND r2.uid<>r1.uid";
+    if(db_result(db_query($staff_check,$uid,$user->uid))>0){
+	return TRUE;
+    }
+    
+    return FALSE;
+}
+
+/**
  * Check the account has permission to edit research page or not
  * Who has the permission:
  *   - Owner who creates the research page
@@ -464,11 +497,17 @@ function research_project_validate($form, &$form_state){
  * implements hook_insert().
  */
 function research_project_insert($node){
-    $sql = "INSERT INTO {research_project_page}"
+    $sql = "INSERT INTO {research_project_page} "
           ."(nid, project_code, invitation_way, status, created, changed) "
 	  ."VALUES(%d, '%s', %d, %d, now(), now())";
     $project_code = "p".str_pad($node->nid,6,"0",STR_PAD_LEFT);
     db_query($sql,$node->nid,$project_code,$node->invitation,$node->pstatus);
+    $sql2 = "SELECT id FROM {research_project_page} WHERE nid=%d";
+    $id=db_result(db_query($sql2,$node->nid));
+    $sql2 = "INSERT INTO {project_researchers}"
+           ."(uid, pid, created, changed, introductor, status, weight) "
+	   ."VALUES(%d, %d, now(), now(), 'Project creater', 0, -1)";
+    db_query($sql3, $node->uid,$id);
 }
 
 /**
@@ -485,7 +524,9 @@ function research_project_update($node){
 function research_project_delete($node){
    // change the state of project, not real deleted
    $sql = "UPDATE {research_project_page} SET status=4, changed=now() WHERE nid=%d";
-    db_query($sql,$node->nid);
+   db_query($sql,$node->nid);
+   
+   //TODO handle researcher, person and tools info
 }
 
 /**

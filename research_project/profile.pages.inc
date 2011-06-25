@@ -11,15 +11,40 @@
 function display_user_profiles_page($person){
     drupal_add_css(drupal_get_path('module','research_project')."/profile.css");
     //$person = user_load($uid);
+    
+    //check view user profile permission
+    access_view_user_profiles($person->uid);
+    
     //get user profiles
     load_user_profiles($person);
+    
     //count user projects
     $count_work_sql = "SELECT COUNT(id) FROM {project_researchers} WHERE uid=%d";
     $count_work = db_result(db_query($count_work_sql,$person->uid));
-    $count_work_sql = "SELECT COUNT(nid) FROM {node} WHERE type='researchproject'AND uid=%d ";
-    $count_work+= db_result(db_query($count_work_sql,$person->uid));
     $person->work_project = $count_work;
-    $count_participate_sql = ""
+    $count_participate_sql = "SELECT COUNT(id) FROM {project_persons} WHERE uid=%d";
+    $count_participate = db_result(db_query($count_participate_sql,$person->uid));
+    $person->participate_project = $count_participate;
+    
+    //get user projects
+    $work_projects = array();
+    $work_projects_sql = "SELECT n.nid, n.title, FROM_UNIXTIME(r.created, '%%d/%m/%Y') history FROM {node} AS n, {research_project_page} AS p, {project_researchers} AS r "
+                        ."WHERE r.uid={$person->uid} AND r.pid=p.id AND n.nid=p.nid ORDER by r.created";
+                        
+    $res2 = db_query($work_projects_sql);
+    while($project=db_fetch_array($res2)){
+        $work_projects[] = $project;
+    }
+    $person->work_projects = $work_projects;
+    
+    $participate_projects = array();
+    $joined_projects_sql = "SELECT n.nid, n.title, FROM_UNIXTIME(pp.created, '%%d/%m/%Y') history FROM {node} AS n, {research_project_page} AS p, {project_persons} AS pp "
+                        ."WHERE pp.uid={$person->uid} AND pp.pid=p.id AND n.nid=p.nid ORDER BY pp.created";
+    $res3 = db_query($joined_projects_sql);
+    while($project=db_fetch_array($res3)){
+        $participate_projects[] = $project;                  
+    }
+    $person->participate_projects = $participate_projects;
     
     //check current user
     global $user;
@@ -46,6 +71,7 @@ function edit_user_profiles_page($user){
 function project_user_profiles_form(&$form_state,$user){
     //get user profiles
     load_user_profiles($user);
+    $form['#attributes']['enctype'] = 'multipart/form-data';
     $form['uid'] = array(
         '#type' => 'hidden',
         '#value' => $user->uid,
@@ -83,13 +109,13 @@ function project_user_profiles_form(&$form_state,$user){
         '#type' => 'date',
         '#title' => 'Birthday',
         '#required' => TRUE,
-        '#default_value' => empty($user->profiles->birthday)?"":array('year' => 2007, 'month' => 2, 'day'=>20),
+        '#default_value' => empty($user->profiles->byear)?"":array('year' => $user->profiles->byear, 'month' => $user->profiles->bmonth, 'day'=>$user->profiles->bday),
     );
     $form['picture'] = array(
         '#type'  => 'file',
         '#title' => 'Picture',
         '#description' => t('If no change, keep this empty.'),
-        '#suffix' => empty($user->profiles->photo)?"":"<img src='{}' height='80px'/><br/>",  
+        '#suffix' => empty($user->profiles->photo)?"":"<img src='{$user->profiles->photo}' height='80px'/><br/>",  
     );
     $form['picture-url'] = array(
         '#type' => 'hidden',
@@ -107,7 +133,6 @@ function project_user_profiles_form(&$form_state,$user){
  */
 function project_user_profiles_form_submit($form,&$form_state){
     $uid = $form_state['values']['uid'];
-    $photo = $form_state['values']['picture-url'];
     $firstname = $form_state['values']['firstname'];
     $lastname = $form_state['values']['lastname'];
     $phone = $form_state['values']['phone'];
@@ -115,6 +140,30 @@ function project_user_profiles_form_submit($form,&$form_state){
     $birthday = $birthdayArray['year'].'-'.$birthdayArray['month'].'-'.$birthdayArray['day'];
     $gender = $form_state['values']['gender'];
     
+    //Upload image
+    $validators = array(
+        'file_validate_is_image' => array(),
+    );
+    $file = file_save_upload('picture', $validators);
+    if($file!=0){
+        $info = image_get_info($file->filepath);
+        //create tools_logo folder if not existed
+        $folder = "users_photo";
+        $path = file_create_path($folder);
+        file_check_directory($path, FILE_CREATE_DIRECTORY);
+        
+        $destination = $folder.'/'.time().'.'. $info['extension'];
+        if(file_copy($file, $destination, FILE_EXISTS_REPLACE)){
+	    $photo = url($file->filepath);
+            $photo = str_replace("?q=","", $photo );
+        }else{
+            //keep old logo
+           $photo = $form_state['values']['picture-url'];
+        }
+    }else{
+        //no change in logo
+        $photo = $form_state['values']['picture-url'];
+    }
     
     //find profile
     $find = "SELECT COUNT(*) FROM {person_profiles} WHERE uid=%d";

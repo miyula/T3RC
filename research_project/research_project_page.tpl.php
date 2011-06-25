@@ -36,7 +36,7 @@
     <?php foreach($node->researcher_list as $researcher) { ?>
         <li>
             <img class="staff-photo" src="<?=$module_path?>/images/user_default.gif" alt=""/>
-            <span class="staff-name"><a href="<?=$researcher['uid']?>" target="_blank"><?=$researcher['name']?></a></span>
+            <span class="staff-name"><a href="<?=url("user/".$researcher['uid'])?>" target="_blank"><?=$researcher['name']?></a></span>
             <span class="staff-intro">(<?=$researcher['introduction']?>)</span>
         </li>
     <?php } ?>
