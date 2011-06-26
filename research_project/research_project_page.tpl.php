@@ -50,7 +50,7 @@
     <?php } ?>
     </h2>
     <?php if(isset($node->partipatent_count)) { ?>
-    <p>There are <?=$node->partipatent_count?> people joined in this project. <a href="">View them</a>.</p>
+    <p>There are <?=$node->partipatent_count?> people joined in this project. <a href="<?=url("researchpage/participants/list/{$node->pid}")?>">View them</a>.</p>
     <?php }else{ ?>
     <p>No information.</p>
     <?php } ?>

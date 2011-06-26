@@ -195,3 +195,65 @@ function _delete_research_tool_info_submit($form, &$form_state){
     db_query($sql,$id);
     drupal_goto("admin/content/researchtools/");
 }
+
+/**
+ * Menu callback for admin/settings/sms
+ */
+function sms_settings_callback(){
+    return drupal_get_form("sms_settings_info_form");
+}
+
+/**
+ * Form for sms settings info
+ */
+function sms_settings_info_form(){
+    $form['username'] = array(
+        '#title' => t('Username'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#default_value' => variable_get('sms_server_username', ''),
+    );
+    $form['password'] = array(
+        '#title' => t('Password'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#default_value' => variable_get('sms_server_password', ''),
+    );
+    $form['server-address'] = array(
+        '#title' => t('Server Address'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+        '#default_value' => variable_get('sms_server_address', ''),
+    );
+    $form['send-test-message'] = array(
+        '#title' => t('send test message to'),
+        '#type' => 'textfield',
+        '#required' => FALSE,
+        '#description' => t('Input a phone number'),
+    );
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+    return $form;
+}
+/**
+ * Handle submit for  sms settings info form
+ */
+function sms_settings_info_form_submit($form, &$form_state){
+    $username = $form_state['values']['username'];
+    $password = $form_state['values']['password'];
+    $server = $form_state['values']['server-address'];
+    $message_to = $form_state['values']['send-test-message'];
+    
+    variable_set('sms_server_username', $username);
+    variable_set('sms_server_password', $password);
+    variable_set('sms_server_address', $server);
+    
+    drupal_set_message("Save SMS settings changes successfully","status");
+    
+    if(!empty($message_to)){
+        send_sms($message_to,"This is a test message.");
+    }
+    
+}

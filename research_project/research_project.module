@@ -36,7 +36,7 @@ function research_project_menu(){
         'page callback' => 'edit_research_tools_callback',
 	'page arguments' => array(4),
         'access arguments' => array('Edit research tools'),
-        'type' => MENU_NORMAL_ITEM,
+        'type' => MENU_CALLBACK,
         'file' => 'research.admin.inc',
     );
     $menu['admin/content/researchtools/delete/%'] = array(
@@ -45,6 +45,14 @@ function research_project_menu(){
         'page callback' => 'delete_research_tools_callback',
 	'page arguments' => array(4),
         'access arguments' => array('Edit research tools'),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.admin.inc',
+    );
+    $menu['admin/settings/sms'] = array(
+	'title' => t('SMS settings'),
+        'description' => t('Short message service settings'),
+        'page callback' => 'sms_settings_callback',
+        'access arguments' => array('administer site configuration'),
         'type' => MENU_NORMAL_ITEM,
         'file' => 'research.admin.inc',
     );
@@ -504,9 +512,9 @@ function research_project_insert($node){
     db_query($sql,$node->nid,$project_code,$node->invitation,$node->pstatus);
     $sql2 = "SELECT id FROM {research_project_page} WHERE nid=%d";
     $id=db_result(db_query($sql2,$node->nid));
-    $sql2 = "INSERT INTO {project_researchers}"
-           ."(uid, pid, created, changed, introductor, status, weight) "
-	   ."VALUES(%d, %d, now(), now(), 'Project creater', 0, -1)";
+    $sql3 = "INSERT INTO {project_researchers}"
+           ."(uid, pid, created, changed, introduction, status, weight) "
+	   ."VALUES(%d, %d, now(), now(), 'Project creator', 0, -1)";
     db_query($sql3, $node->uid,$id);
 }
 
@@ -703,6 +711,47 @@ function splite_mail_list($mail_content,$split){
 }
 
 /**
+ * Splite the phone list into array from phone content
+ * @param
+ *   $phone_content
+ *      string
+ * @param
+ *   $split
+ *      string
+ * @return
+ *   Array
+ */
+function splite_phone_list($phone_content,$split){
+    $phone_list = array();
+    $phone_toke = strtok($phone_content,$split);
+    while($phone_toke!==false){
+        $phone = trim($phone_token);
+        if(!empty($phone)&&valid_phone_number($phone)){
+            $phone_list[] = $phone;
+        }
+        $phone_token = strtok($split);
+    }
+    return $phone_list;
+}
+/**
+ * Validate phone number
+ * @param
+ *   $phone
+ *      string
+ * @return
+ *   boolean
+ */
+function valid_phone_number($phone){
+    
+    if (preg_match('/^[+][0-9]*$/', $phone)) {
+	return TRUE;
+    }else{
+	drupal_set_message("Invalid phone number $phone.Phone number should starts with e.g. '+358'",'error');
+	return FALSE;
+    }
+}
+
+/**
  * Generate invitation template
  * @param
  *  $type
@@ -713,20 +762,21 @@ function splite_mail_list($mail_content,$split){
  */
 function generate_invitation_template($type,$pid){
     //get project info
-    $sql = "SELECT title from {node} AS n, {research_project_page} AS r "
+    $sql = "SELECT n.nid nid, n.title title from {node} AS n, {research_project_page} AS r "
           ."WHERE r.id=%d AND r.nid=n.nid";
     if($project=db_fetch_object(db_query($sql,$pid))){
 	$name = $project->title;
+	$nid = $project->nid;
     }
-    $link = "http://".$_SERVER['HTTP_HOST'].url("node/$pid");
+    $link = "http://".$_SERVER['HTTP_HOST'].url("node/$nid");
     if($type=="email"){
 	$content.= "<p>Hi,</p>";
 	$content.= "<p>You are invited to join project $name. Visit $link to get more detials.</p>";
-	$content.= "<P>Your login account is your email address, first login password is @password.<P>";
+	$content.= "<P>@account_info<P>";
 	$content.= "<p>Kind regards,</p>";
 	$content.= "<p>$name</p>";
     }else if($type="sms"){
-	$content.= "You are invited to join project $name. You can visit $link to get more details.Your login account is your phone number, first login password is @password.";
+	$content.= "You are invited to join project $name. You can visit $link to get more details. @account_info.";
     }
     
     
@@ -778,175 +828,14 @@ function get_user_by_mail($mail,$project){
     return $user;
 }
 
-
-/**
- * Send project invite email
- *
- * @param
- *   $mail_list
- *      array, list of email address
- * @param
- *   $idproject
- *      int, research project id
- * @param
- *   $project_name
- *      string
- */
-function send_project_invite_mails($mail_list,$idproject,$project_name=""){
-    
-    foreach($mail_list as $mail){
-        
-        //step 1: get user by email address
-        $get_user_sql = "SELECT uid, name, mail, pass FROM {users} WHERE LOWER(mail) = LOWER('%s')";
-        $user = db_fetch_object(db_query($get_user_sql, $mail));
-        if($user){
-            //check if user already in person table
-            $get_person_sql = "SELECT COUNT(*) FROM {person} WHERE uid = %d";
-            $person = db_result(db_query($get_person_sql,$user->uid));
-            if($person==0){
-                //generate new person
-                $person_sql = "INSERT INTO {person}(uid,username,email,password) VALUES(%d,'%s','%s','%s')";
-                db_query($person_sql,$user->uid,$user->name,$user->mail,$user->pass);
-                watchdog('New person', 'A new person(@mail) has been added by project @project', array('@mail' => $mail,'@project' => $project_name), WATCHDOG_INFO);
-            }
-	    //add Person role to user
-	    $user = user_load($user->uid);
-	    $roles = $user->roles;
-	    $role = 'Person';
-	    if(!array_search($role,$roles)){
-		//If person not in user's roles, add it
-		$sql = "SELECT rid FROM {role} WHERE name='%s'";
-		$id = db_result(db_query($sql,$role));
-		$insert = "INSERT into {users_roles}(uid,rid) VALUES(%d,%d)";
-		db_query($insert,$user->uid,$id);
-	    }
-        }else{
-            $new_user = TRUE;
-            //generate new user	    
-            $default_pass = "111111";
-	    
-	    $role = 'Person';
-	    $sql = "SELECT rid FROM {role} WHERE name='%s'";
-	    $id = db_result(db_query($sql,$role));
-	    $roles[$id] = $role;
-            
-	    $user_info = array(
-                'name' => $mail,
-                'mail' => $mail,
-                'pass' => $default_pass,
-		'roles' => $roles,
-                'status' => 1,
-            );
-             
-            $user = user_save($account,$user_info);
-            //generate new person
-            $person_sql = "INSERT INTO {person}(uid,username,email,password) VALUES(%d,'%s','%s','%s')";
-            db_query($person_sql,$user->uid,$user->name,$user->mail,$user->pass);
-            watchdog('New user', 'A new user(@mail) has been added by project @project', array('@mail' => $mail,'@project' => $project_name), WATCHDOG_INFO);
-        }        
-        
-        //step 2: check if use has already linked with project
-        $check_projectCode = "SELECT COUNT(*) FROM {project_code} WHERE idperson=%d AND idproject=%d";
-        $check_projectCode_result = db_result(db_query($check_projectCode,$user->uid,$idproject));
-        if($check_projectCode_result>0){
-            continue;
-        }
-        
-        //step 3: link user with project
-        $create_projectCode_sql = "INSERT INTO {project_code}(idperson,idproject) VALUES(%d,%d)"; 
-        db_query($create_projectCode_sql,$user->uid,$idproject);        
-        
-        //step 4: generate project code
-        $get_projectcode_id = "SELECT idprojectcode FROM {project_code} WHERE idperson=%d AND idproject=%d";
-        $projectcode_id = db_result(db_query($get_projectcode_id,$user->uid,$idproject));
-        if($projectcode_id>0){
-	    //projectCode start from 1000001
-            $projectCode = 100000+$projectcode_id;
-            $set_projectCode = "UPDATE {project_code} SET project_code='%s' WHERE idprojectcode=%d";
-            db_query($set_projectCode,$projectCode,$projectcode_id);
-            watchdog('New project code', 'A new project code (@projectcode) has been added to link @user with project @project', array('@projectcode' => $projectCode,'@user'=>$user->name,'@project' => $project_name), WATCHDOG_INFO);
-            
-            //TODO:setp 5: send invitation mail
-            /*$message['id'] = "side_research_project_invitation_mail";
-            $message['to'] = $mail;
-            $message['subject'] = "@project invites you to join their research";
-            $message['body'] = "Hi @user,<br/>"
-                            ."You are invited to join @project, @link <br/>"
-                            ."<br/>"
-                            ."Your invited project code:@code<br/>"
-                            ."Visit @side_link, login to change your password.<br/>"
-                            ."Username: @mail"
-                            ."Password: @pass";
-            $message['headers']['from'] = "miyula1988@gmail.com"; */
-	    $mail_body.= '<html><head>'
-			.'<meta http-equiv="Content-Language" content="zh-cn">'
-			.'<meta http-equiv="Content-Type" content="text/html; charset=GB2312"></head>'
-			.'<body>';
-            if($new_user){
-                $mail_body.= "<p>Hi @user,</p>"
-                            ."<p>You are invited to join @project, !link</p> "
-                            ."<p>Your invited project code:@code</p>"
-                            ."<p>Visit !side_link, login to change your password.</p> "
-                            ."<p>Username: @mail</p> "
-                            ."<p>Password: @pass</p> ";
-            }else{
-                $mail_body.= "<p>Hi @user,</p>"
-                            ."<p>You are invited to join @project, !link </p>"
-                            ."<p>Your invited project code: @code</p>";
-            }
-	    $mail_body.= "</body><html>";
-            $project_link = "http://".$_SERVER['HTTP_HOST'].url("node/".$idproject);
-            $side_link = "http://".$_SERVER['HTTP_HOST'].url("user/login");
-	    
-	    $subject = t('@project invites you to join their research',array("@project"=>$project_name));
-	    $body = t($mail_body,
-                        array(
-                            '@user'=>$user->name,
-                            '@project'=>$project_name,
-                            '!link'=>$project_link,
-                            '!side_link'=>$side_link,
-                            '@mail' => $user->name,
-                            '@pass' => $default_pass,
-                            '@code' => $projectCode,
-                        )
-		    );
-	    side_send_http_mail($mail,$subject,$body);
-            /*$message = array(
-                'to' => $mail,
-                'subject' => t('@project invites you to join their research',array("@project"=>$project_name)),
-                'body' => t($mail_body,
-                            array(
-                                '@user'=>$user->name,
-                                '@project'=>$project_name,
-                                '!link'=>$project_link,
-                                '!side_link'=>$side_link,
-                                '@mail' => $user->name,
-                                '@pass' => $default_pass,
-                                '@code' => $projectCode,
-                            )
-                        ),
-                'headers' => array('From' => 'miyula1988@gmail.com'),
-                'from' => 'miyula1988@gmail.com',
-            );
-            if(drupal_mail_send($message)){
-                watchdog('Send mail',"Success to send invitation mail to @mail", array('@mail'=>$mail),WATCHDOG_INFO);
-            }else{
-                watchdog('Send mail',"Failed to send invitation mail to @mail", array('@mail'=>$mail),WATCHDOG_WARNING);
-            }*/
-        }else{
-            //TODO: notice error to researcher
-            watchdog('ERROR', 'Failed to generate project for @user in project @project', array('@user'=>$user->name,'@project' => $project_name), WATCHDOG_ERROR);
-        }
-        
-        
-        
-    }
-}
-
 /**
  * Send HTTP mail to person
+ * @param
+ *   $to_mail, email address
+ *   $subject, string
+ *   $body, string
  */
-function side_send_http_mail($to_mail,$subject,$body){
+function project_send_http_mail($to_mail,$subject,$body){
     require_once(drupal_get_path('module','phpmailer').'/phpmailer/class.phpmailer.php');
     $mail = new PHPMailer(true);
     try {
@@ -979,6 +868,48 @@ function side_send_http_mail($to_mail,$subject,$body){
     } catch (Exception $e) {
 	drupal_set_message("Failed to send mail to $to_mail. ".$e->getMessage(),"error");
     }
+}
+
+
+/**
+ * Send short message
+ * @param
+ *   $to, phonenumber
+ *   $message, string
+ */
+function send_sms($to,$message){
+    $username = variable_get('sms_server_username', '');
+    $password = variable_get('sms_server_password', '');
+    $url = variable_get('sms_server_address', '');
+    $port = 80;
+    
+    $postfield = 'username='.$username
+                .'&password='.$password
+                .'&message='.$message
+                .'&msisdn='.$to;
+    
+    //POST session
+    if($ch = curl_init($url)){
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST'); 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postfield); 
+        $data = curl_exec($ch);
+        
+        //$data = status_code|status_description|batch_id e.g. 0|IN_PROGRESS|147166645
+        $token = strtok($data, "|");
+        if($token !== false&&$token==0){
+            drupal_set_message(t("Send message to $to successfully"),'status');
+        }else{
+            if($token !== false){
+                $token = strtok("|");
+            }else{
+                $token = '';
+            }
+            //Fail to send SMS.
+            drupal_set_message(t("Failed to send message to $to "),'error');
+        }
+        curl_close($ch);
+    }  
 }
 
 /**
