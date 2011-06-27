@@ -725,6 +725,24 @@ function research_project_user($op, &$edit, &$user){
 	//redirect to user/profiles/%
 	drupal_goto("user/profiles/{$user->uid}");
 	//print_r($user->content);
+    }else if($op == 'insert'){
+	//insert one person_profiles
+	$insert = "INSERT INTO {person_profiles}(uid) VALUES(%d)";
+	db_query($insert,$user->uid);
+    }else if($op == 'login'){
+	//check email info
+	if(empty($user->mail)){
+	    drupal_set_message("Your email info is empty, please fill it.","status");
+	    drupal_goto("user/{$user->uid}/edit");
+	}else{
+	    //check person_profiles
+	    $check = "SELECT firstname FROM {person_profiles} WHERE uid=%d";
+	    $result = db_result(db_query($check,$user->uid));
+	    if($result==FALSE||emtpy($result)){
+		drupal_set_message("Your personal information is empty, please fill it.","status");
+		drupal_goto("user/profiles/{$user->uid}/edit");
+	    }
+	}
     }
 }
 
@@ -920,9 +938,9 @@ function get_user_by_phone($phone,$project){
 	$user->new_user = TRUE;
 	$user->pass = $default_pass;
 	
-	//add user profile
-	$insert = "INSERT INTO {person_profiles}(uid, phone) VALUES(%d,'%s')";
-	db_query($insert,$user->uid,$phone);
+	//add phone into user profile
+	$insert = "UPDATE {person_profiles}SET phone='%s' WHERE uid=%d";
+	db_query($insert,$phone,$user->uid);
 	
     }else{
 	$user = user_load($uid);

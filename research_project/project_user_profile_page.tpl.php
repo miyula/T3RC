@@ -13,7 +13,8 @@
         <dl><?php if(!empty($person->profiles->photo)){
 	    echo "<img src='{$person->profiles->photo}' class='profile-head-photo'/>";
 	}if($person->access_edit_profile) { ?>
-        <input type="button" value="Edit my profile" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/>
+        <input type="button" value="Edit my profile" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/> 
+        <input type="button" value="Edit account" onclick="window.location.href='<?=url("user/{$person->uid}/edit")?>'" />
         <?php } ?>
         </dl>
         <dl>
