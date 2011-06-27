@@ -247,6 +247,17 @@ function research_project_schema(){
                 'unsigned' => TRUE,
                 'not null' => TRUE,
             ),
+            'introduction' => array(
+                'type' => 'varchar',
+                'length' => 255,
+                'not null' => TRUE,
+            ),
+            'weight' => array(
+                'type' => 'int',
+                'size' => 'tiny',
+                'not null' => TRUE,
+                'default' => 0,
+            ),
             'classify' => array(
                 'type' => 'int',
                 'size' => 'tiny',

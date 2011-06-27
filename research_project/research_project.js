@@ -166,3 +166,134 @@ function save_edit_researcher_change(pid,rid){
     });
     
 }
+
+/**
+ * Button onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ * @param
+ *   rid
+ *     int, index of researcher in the project
+ */
+function remove_researcher_from_project(pid,rid){
+    if(confirm("Are you real want to remove this researcher from project?")){
+        var url = Drupal.settings.research_project.research_window+pid+"/delete/"+rid;
+        $.get(url,function(data){
+            var result = jQuery.parseJSON(data);
+            if(result.status==1){
+                $("#edit-dialog-div").dialog('close');
+                var refresh = Drupal.settings.research_project.research_refresh+pid;
+                $("#researchers-list").load(refresh);
+            }else{
+                alert("Failed to remove researcher from project.");
+            }        
+        });
+    }
+}
+/**
+ * Button onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ */
+function display_add_new_report_window(pid){
+    var $dialog = $("#edit-dialog-div");
+    $dialog.dialog( "option", "title", 'Add new document');
+    $dialog.dialog('open');
+    $("#onloading-div").css('display','none');
+    var url = Drupal.settings.research_project.report_window+pid;
+    $("#edit-dialog-content").load(url);
+    
+}
+/**
+ * Button onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ */
+function add_new_report_to_project(pid){
+    var nid = $("#edit-report").val();
+    var intro =$.trim($("#edit-introduction").val());
+    var weight = $("#edit-weight").val();
+    
+    if(intro==''){
+        alert("Please put something for introduction!");
+        return;
+    }
+    var url = Drupal.settings.research_project.report_bind+pid;
+    $.post(url,{"nid":nid,"intro":intro,"weight":weight},function(data){
+        var result = jQuery.parseJSON(data);
+        if(result&&result.status==1){
+            $("#edit-dialog-div").dialog('close');
+            var refresh = Drupal.settings.research_project.report_refresh+pid;
+            $("#reports-list").load(refresh);
+        }else{
+            alert("Failed to bind report with project.");
+        }
+    });
+}
+/**
+ * Button onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ * @param
+ *   did
+ *     int, index of document in the project
+ */
+function display_edit_report_window(pid,did){
+    var $dialog = $("#edit-dialog-div");
+    $dialog.dialog( "option", "title", 'Edit document');
+    $dialog.dialog('open');
+    $("#onloading-div").css('display','none');
+    var url = Drupal.settings.research_project.report_window+pid+'/edit/'+did;
+    $("#edit-dialog-content").load(url);
+}
+
+/**
+ * Button onclick function
+ */
+function save_report_change_in_project(){
+    var pid = $('#edit-pid').val();
+    var nid = $('#edit-nid').val();
+    var intro = $('#edit-introduction').val();
+    var weight = $('#edit-weight').val();
+    
+    var url = Drupal.settings.research_project.report_bind+pid;
+    $.post(url,{"nid":nid,"intro":intro,"weight":weight},function(data){
+        var result = jQuery.parseJSON(data);
+        if(result&&result.status==1){
+            $("#edit-dialog-div").dialog('close');
+            var refresh = Drupal.settings.research_project.report_refresh+pid;
+            $("#reports-list").load(refresh);
+        }else{
+            alert("Failed to bind report with project.");
+        }
+    });
+}
+
+/**
+ * Button onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ * @param
+ *   did
+ *     int, index of document in the project
+ */
+function remove_report_from_project(pid,did){
+    if(confirm("Are you real want to remove this document from project?")){
+        var url = Drupal.settings.research_project.report_window+pid+"/delete/"+did;
+        $.get(url,function(data){
+            var result = jQuery.parseJSON(data);
+            if(result&&result.status==1){
+                $("#edit-dialog-div").dialog('close');
+                var refresh = Drupal.settings.research_project.report_refresh+pid;
+                $("#reports-list").load(refresh);
+            }else{
+                alert("Failed to remove document from project.");
+            }        
+        });
+    }
+}

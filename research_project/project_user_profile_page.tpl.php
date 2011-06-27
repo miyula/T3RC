@@ -51,7 +51,7 @@
     <h2>Projects working for</h2>
     <ul class="projects-list">
     <?php foreach($person->work_projects as $project){ ?>
-        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=$project['history']?>)</span></li>
+        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span></li>
     <?php } ?>
     </ul>
 </div>
@@ -59,7 +59,7 @@
     <h2>Projects participating in</h2>
     <ul class="projects-list">
     <?php foreach($person->participate_projects as $project){ ?>
-        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=$project['history']?>)</span></li>
+        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span></li>
     <?php } ?>    
     </ul>
 </div>

@@ -217,7 +217,7 @@ function edit_researcher_window_form(&$form_state,$researcher){
         '#default_value' => $researcher->weight,  
     );
     $form['buttons'] = array(
-        '#value' => "<input type='button' value='Save' onclick='save_edit_researcher_change({$researcher->pid},{$researcher->id})' />".($researcher->is_owner?"":" <input type='button' value='Remove' />"),
+        '#value' => "<input type='button' value='Save' onclick='save_edit_researcher_change({$researcher->pid},{$researcher->id})' />".($researcher->is_owner?"":" <input type='button' value='Remove' onclick='remove_researcher_from_project({$researcher->pid},{$researcher->id})' />"),
     );
     return $form;
 }
@@ -240,6 +240,30 @@ function ajax_save_researcher_window_change($rid){
         $status = "1";
     }
     
+    
+    printf('{"status":%d,"message":"%s"}',$status,$message);
+}
+
+/**
+ * Menu callback for researchpage/researcher/window/%/delete/%
+ */
+function ajax_delete_researcher_from_project($rid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    $rid = (int)$rid;
+    if($rid>0){
+        $sql = "DELETE FROM {project_researchers} WHERE id=%d";
+        if(db_query($sql,$rid)){
+            $status = 1;
+            $message = "Successed to remove researcher from project";
+        }else{
+            $status = 0;
+            $message = "SQL error!";
+        }
+        
+    }else{
+        $status = 0;
+        $message = "rid should be an index!";
+    }
     
     printf('{"status":%d,"message":"%s"}',$status,$message);
 }
@@ -509,7 +533,7 @@ function list_participants_page($pid){
         }else{
             $name = $person->firstname." ".$person->lastname;
         }
-        $user_link = l($name,"user/{$person->uid}");
+        $user_link = l($name,"user/profiles/{$person->uid}");
         $rows[] = array(            
             array('data'=>$id),
             array('data'=>$user_link),
@@ -523,4 +547,193 @@ function list_participants_page($pid){
     $content.= "<p>$back_link</p>";
     return $content;
 }
-?>
+
+/**
+ * Menu callback for researchpage/report/window/%
+ */
+function add_project_report_window($pid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    $content = drupal_get_form("new_report_info_form",$pid);
+    print $content;
+}
+
+/**
+ * Form for new report info window
+ */
+function new_report_info_form(&$form_state,$pid){
+    //get reports list in this project
+    $reports_sql = "SELECT nid FROM {project_documents} WHERE pid=%d";
+    $res1 = db_query($reports_sql,$pid);
+    $reports_list = array();
+    while($nid=db_result($res1)){
+        $reports_list[] = $nid;
+    }
+    
+    //get current users node list
+    global $user;
+    $node_sql = "SELECT nid, title FROM {node} WHERE uid=%d AND type<>'researchproject' ";
+    $res2 = db_query($node_sql,$user->uid);
+    $node_list = array();
+    while($node=db_fetch_object($res2)){
+        if(in_array($node->nid,$reports_list)){
+            continue;
+        }
+        $node_list[''.$node->nid] = $node->title;
+    }
+    
+    $form['pid'] = array(
+        '#type' => 'hidden',
+        '#value' => $pid,
+    );
+    $form['report'] = array(
+        '#type' => 'select',
+        '#title' => t('Select artical'),
+        '#options' => $node_list,
+        '#description' => l('Create new content','node/add', array('attributes' => array('target'=>'_blank'))),
+        '#required' => TRUE,    
+    );
+    $form['introduction'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Short introduction'),
+        '#description' => t('Introduction should less than 255 chars'),
+        '#required' => TRUE,
+    );
+    $form['weight'] = array(
+        '#type' => 'weight',
+        '#title' => t('Weight'),
+        '#description' => t('Change the weight to order reports'),
+    );
+    $form['submit'] = array(
+        '#value' => "<input type='button' value='Add' onclick='add_new_report_to_project($pid)'/>",
+    );
+    return $form;
+}
+
+
+/**
+ * Menu callback for researchpage/report/bind/%
+ */
+function ajax_bind_report_to_project($pid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    $nid = (int)$_POST['nid'];
+    $introduction = $_POST['intro'];
+    $weight = (int) $_POST['weight'];
+    
+    if($nid<=0||empty($introduction)){
+        $status = 0;
+        $message = "Invaldate parameters";
+    }else{
+        //check if node already in project document table
+        $check = "SELECT id FROM {project_documents} WHERE pid=%d AND nid=%d";
+        $id = db_result(db_query($check,$pid,$nid));
+        if($id){
+            //Update
+            $update = "UPDATE {project_documents} SET introduction='%s', weight=%d WHERE id=%d";
+            if(db_query($update,$introduction,$weight,$id)){
+                $status = 1;
+                $message = "Successed to update changes.";
+            }else{
+                $status = 0;
+                $message = "SQL error.";
+            }
+        }else{
+            //Insert new
+            $insert = "INSERT INTO {project_documents}(nid,pid,introduction,weight) VALUES(%d,%d,'%s',%d)";
+            if(db_query($insert,$nid,$pid,$introduction,$weight)){
+                $status = 1;
+                $message = "Successed to bind new report with project.";
+            }else{
+                $status = 0;
+                $message = "SQL error.";
+            }
+        }
+    }
+    printf('{"status":%d,"message":"%s"}',$status,$message);
+    
+}
+
+/**
+ * Menu callback for researchpage/report/window/%/edit/%
+ */
+function edit_report_in_project_window($did){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    //get report info
+    $get = "SELECT d.id id, d.nid nid, d.pid pid, d.introduction introduction, d.weight weight, n.title "
+          ."FROM {project_documents} AS d, {node} AS n WHERE d.id=%d AND n.nid=d.nid";
+    $res = db_query($get,$did);
+    if($report=db_fetch_object($res)){
+        $content = "<h3>Title: {$report->title}</h3>";
+        $content.= drupal_get_form("edit_report_info_form",$report);
+    }else{
+        $content = "<h2>Can not find the report information.</h2>";
+    }
+    print $content;
+}
+/**
+ * Form for edit report info window
+ */
+function edit_report_info_form(&$form_state,$report){
+    $form['pid'] = array(
+        '#type' => 'hidden',
+        '#value' => $report->pid,
+    );
+    $form['nid'] = array(
+        '#type' => 'hidden',
+        '#value' => $report->nid,
+    );
+    $form['introduction'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Short introduction'),
+        '#description' => t('Introduction should less than 255 chars'),
+        '#required' => TRUE,
+        '#default_value' => $report->introduction,
+    );
+    $form['weight'] = array(
+        '#type' => 'weight',
+        '#title' => t('Weight'),
+        '#description' => t('Change the weight to order reports'),
+        '#default_value' => $report->weight,
+    );
+    $form['submit'] = array(
+        '#value' => "<input type='button' value='Save' onclick='save_report_change_in_project()'/> <input type='button' value='Remove' onclick='remove_report_from_project({$report->pid},{$report->id})'/>",
+    );
+    
+    return $form;
+}
+
+/**
+ * Menu callback for researchpage/report/window/%/delete/%
+ */
+function ajax_delete_report_from_project($did){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    $delete = "DELETE FROM {project_documents} WHERE id=%d";
+    if(db_query($delete,$did)){
+        $status = 1;
+        $message = "Successed to remove report form project.";
+    }else{
+        $status = 0;
+        $message = "SQL error";
+    }
+    
+    printf('{"status":%d,"message":"%s"}',$status,$message);
+}
+
+/**
+ * Menu callback for researchpage/reports/refresh/%
+ */
+function refresh_reports_list_in_project($pid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    $get_documents_sql = "SELECT d.id id, n.nid nid, n.title title, d.introduction introduction FROM {project_documents} AS d, {node} AS n WHERE pid=%d AND d.nid=n.nid ORDER by d.weight";
+    $res = db_query($get_documents_sql,$pid);
+    
+    $content = "<ul>";
+    while($document = db_fetch_array($res)){
+        $content.= "<li>"
+                  ."<a href='".url("node/{$document['nid']}")."' target='_blank'>{$document['title']}</a> "
+                  ."<span class='edit-text'><a href='javascript:display_edit_report_window($pid,{$document['id']})'>[Edit]</a></span>"
+                  ."<p>{$document['introduction']}</p>"
+                  ."</li>";
+    }
+    $content.= "</ul>";
+    print $content;
+}

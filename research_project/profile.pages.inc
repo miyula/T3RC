@@ -28,7 +28,7 @@ function display_user_profiles_page($person){
     
     //get user projects
     $work_projects = array();
-    $work_projects_sql = "SELECT n.nid, n.title, LEFT(r.created, 10) history FROM {node} AS n, {research_project_page} AS p, {project_researchers} AS r "
+    $work_projects_sql = "SELECT n.nid, n.title, UNIX_TIMESTAMP(r.created) history FROM {node} AS n, {research_project_page} AS p, {project_researchers} AS r "
                         ."WHERE r.uid={$person->uid} AND r.pid=p.id AND n.nid=p.nid ORDER by r.created";
                         
     $res2 = db_query($work_projects_sql);
@@ -39,7 +39,7 @@ function display_user_profiles_page($person){
     $person->work_projects = $work_projects;
     
     $participate_projects = array();
-    $joined_projects_sql = "SELECT n.nid, n.title, LEFT(pp.created, 10) history FROM {node} AS n, {research_project_page} AS p, {project_persons} AS pp "
+    $joined_projects_sql = "SELECT n.nid, n.title, UNIX_TIMESTAMP(pp.created) history FROM {node} AS n, {research_project_page} AS p, {project_persons} AS pp "
                         ."WHERE pp.uid={$person->uid} AND pp.pid=p.id AND n.nid=p.nid ORDER BY pp.created";
     $res3 = db_query($joined_projects_sql);
     while($project=db_fetch_array($res3)){

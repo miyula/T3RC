@@ -28,7 +28,7 @@
 <div id="researchers-div" class="r-page-part">
     <h2>
         <span class="sub-title">Researchers</span>
-    <?php if($node->edit_permission){ ?>
+    <?php if($node->is_owner){ ?>
         <span class="action-button" onclick="show_new_researcher_window(<?=$node->pid?>)">Add new</span>
     <?php } ?>
     </h2>
@@ -62,13 +62,19 @@
     <h2>
         <span class="sub-title">Reports</span>
     <?php if($node->edit_permission){ ?>
-        <span class="action-button">Add</span><span class="action-button">Edit</span>
+        <span class="action-button" onclick="display_add_new_report_window(<?=$node->pid?>)">Add new</span>
     <?php } ?>
     </h2>
     <ul id="reports-list">
-        <li><a href="" target="_blank">Report one</a></li>
-        <li><a href="" target="_blank">Report two</a></li>
-        <li><a href="" target="_blank">Report three</a></li>
+    <?php foreach($node->document_list as $document){ ?>
+        <li>
+            <a href="<?=url("node/{$document['nid']}")?>" target="_blank"><?=$document['title']?></a>
+            <span class="edit-text">
+                <a href="javascript:display_edit_report_window(<?=$node->pid?>,<?=$document['id']?>)">[Edit]</a>
+            </span>
+            <p><?=$document['introduction']?></p>
+        </li>
+    <?php } ?>
     </ul>
 </div>
 

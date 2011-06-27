@@ -103,8 +103,8 @@ function research_project_menu(){
         'file' => 'research.pages.inc',
     );
     $menu['researchpage/researcher/window/%/edit/%'] = array(
-	'title' => t('Add new researcher'),
-        'description' => t('Invite new researcher to the project.'),
+	'title' => t('Edit researcher window'),
+        'description' => t('Dispaly edit researcher window.'),
         'page callback' => 'edit_researcher_window',
 	'page arguments' => array(5),
         'access callback' => 'owner_of_research_project_page',
@@ -113,9 +113,19 @@ function research_project_menu(){
         'file' => 'research.pages.inc',
     );
     $menu['researchpage/researcher/window/%/save/%'] = array(
-	'title' => t('Add new researcher'),
+	'title' => t('Save researcher info'),
         'description' => t('save change on researcher info change.'),
         'page callback' => 'ajax_save_researcher_window_change',
+	'page arguments' => array(5),
+        'access callback' => 'owner_of_research_project_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/researcher/window/%/delete/%'] = array(
+	'title' => t('Delete researcher'),
+        'description' => t('save change on researcher info change.'),
+        'page callback' => 'ajax_delete_researcher_from_project',
 	'page arguments' => array(5),
         'access callback' => 'owner_of_research_project_page',
 	'access arguments' => array(3),
@@ -165,6 +175,59 @@ function research_project_menu(){
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
+    
+    //for project reports
+    $menu['researchpage/report/window/%'] = array(
+	'title' => t('Add new report'),
+        'description' => t('Link report to the project.'),
+        'page callback' => 'add_project_report_window',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/report/bind/%'] = array(
+	'title' => t('Bind new report'),
+        'description' => t('Bind report to the project.'),
+        'page callback' => 'ajax_bind_report_to_project',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/report/window/%/edit/%'] = array(
+	'title' => t('Edit report'),
+        'description' => t('Edit report in the project.'),
+        'page callback' => 'edit_report_in_project_window',
+	'page arguments' => array(5),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/report/window/%/delete/%'] = array(
+	'title' => t('Delete report'),
+        'description' => t('Delete report from project.'),
+        'page callback' => 'ajax_delete_report_from_project',
+	'page arguments' => array(5),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/reports/refresh/%'] = array(
+	'title' => t('Refresh reports list'),
+        'description' => t('Refresh reports list in project.'),
+        'page callback' => 'refresh_reports_list_in_project',
+	'page arguments' => array(3),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    
     
     //project page
     $menu['research/project/%'] = array(
@@ -638,6 +701,13 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 	drupal_add_js(array('research_project' => array('research_invite_new' => url("researchpage/researcher/invitenew/"))), 'setting');
 	//add setting Drupal.settings.research_project.research_refresh
 	drupal_add_js(array('research_project' => array('research_refresh' => url("researchpage/researcher/refresh/"))), 'setting');
+	//add setting Drupal.settings.research_project.report_window
+	drupal_add_js(array('research_project' => array('report_window' => url("researchpage/report/window/"))), 'setting');
+	//add setting Drupal.settings.research_project.report_bind
+	drupal_add_js(array('research_project' => array('report_bind' => url("researchpage/report/bind/"))), 'setting');
+	//add setting Drupal.settings.research_project.report_refresh
+	drupal_add_js(array('research_project' => array('report_refresh' => url("researchpage/reports/refresh/"))), 'setting');
+	
     
 	drupal_add_js($path.'/jquery/jquery-ui.min.js');
 	drupal_add_js($path.'/research_project.js');
@@ -678,6 +748,15 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 			    ."WHERE p.pid=%d AND u.uid=p.uid "
 			    ."ORDER BY p.created DESC "
 			    ."";
+    
+    //get project documents
+    $get_documents_sql = "SELECT d.id id, n.nid nid, n.title title, d.introduction introduction FROM {project_documents} AS d, {node} AS n WHERE pid=%d AND d.nid=n.nid ORDER by d.weight";
+    $res3 = db_query($get_documents_sql,$node->pid);
+    $document_list = array();
+    while($document = db_fetch_array($res3)){
+	$document_list[] = $document;
+    }
+    $node->document_list = $document_list;
     
     // Add theme stuff here
     $node->content['research_project_page'] = array(
@@ -733,14 +812,19 @@ function research_project_user($op, &$edit, &$user){
 	//check email info
 	if(empty($user->mail)){
 	    drupal_set_message("Your email info is empty, please fill it.","status");
-	    drupal_goto("user/{$user->uid}/edit");
+	    $url = url("user/{$user->uid}/edit");
+	    header("Location: $url"); 
+	    //drupal_goto("user/{$user->uid}/edit");
+	    exit;
 	}else{
 	    //check person_profiles
 	    $check = "SELECT firstname FROM {person_profiles} WHERE uid=%d";
 	    $result = db_result(db_query($check,$user->uid));
 	    if($result==FALSE||emtpy($result)){
 		drupal_set_message("Your personal information is empty, please fill it.","status");
-		drupal_goto("user/profiles/{$user->uid}/edit");
+		$url = url("user/profiles/{$user->uid}/edit");
+		header("Location: $url"); 
+		exit;
 	    }
 	}
     }

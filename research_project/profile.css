@@ -54,7 +54,8 @@
 #user-card-right dd{
     font-weight: 900;
     font-size: 35px;
-    margin: auto auto;    
+    margin: auto auto;
+    padding-top: 5px;
 }
 #user-card-right dt{
     font-size: 12px;
