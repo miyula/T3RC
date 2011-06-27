@@ -122,3 +122,47 @@ function check_researcher_email_address(id){
         }        
     });
 }
+
+/**
+ * Link onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ * @param
+ *   rid
+ *     int, index of researcher in the project
+ */
+function open_edit_researcher_window(pid,rid){
+    var $dialog = $("#edit-dialog-div");
+    $dialog.dialog( "option", "title", 'Edit researher');
+    $dialog.dialog('open');
+    $("#onloading-div").css('display','none');
+    var url = Drupal.settings.research_project.research_window+pid+"/edit/"+rid;
+    $("#edit-dialog-content").load(url);
+}
+
+/**
+ * Button onclick function
+ * @param
+ *   pid
+ *     int, index of project
+ * @param
+ *   rid
+ *     int, index of researcher in the project
+ */
+function save_edit_researcher_change(pid,rid){
+    var intro = $('#edit-introduction').val();
+    var weight = $('#edit-weight').val();
+    var url = Drupal.settings.research_project.research_window+pid+"/save/"+rid;
+    $.post(url,{"intro":intro,"weight":weight},function(data){
+        var result = jQuery.parseJSON(data);
+        if(result.status==1){
+            $("#edit-dialog-div").dialog('close');
+            var refresh = Drupal.settings.research_project.research_refresh+pid;
+            $("#researchers-list").load(refresh);
+        }else{
+            alert("Failed to save changes");
+        }        
+    });
+    
+}

@@ -97,7 +97,27 @@ function research_project_menu(){
         'description' => t('Invite new researcher to the project.'),
         'page callback' => 'add_researcher_window',
 	'page arguments' => array(3),
-        'access callback' => '_current_user_access_edit_research_page',
+        'access callback' => 'owner_of_research_project_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/researcher/window/%/edit/%'] = array(
+	'title' => t('Add new researcher'),
+        'description' => t('Invite new researcher to the project.'),
+        'page callback' => 'edit_researcher_window',
+	'page arguments' => array(5),
+        'access callback' => 'owner_of_research_project_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
+    $menu['researchpage/researcher/window/%/save/%'] = array(
+	'title' => t('Add new researcher'),
+        'description' => t('save change on researcher info change.'),
+        'page callback' => 'ajax_save_researcher_window_change',
+	'page arguments' => array(5),
+        'access callback' => 'owner_of_research_project_page',
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
@@ -107,7 +127,7 @@ function research_project_menu(){
 	'description' => t('Return the result if this account can be invited to this project'),
 	'page callback' => 'check_invited_researcher_email',
 	'page arguments' => array(3),
-	'access callback' => '_current_user_access_edit_research_page',
+	'access callback' => 'owner_of_research_project_page',
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
@@ -117,7 +137,7 @@ function research_project_menu(){
 	'description' => t('Invite new researcher into the project'),
 	'page callback' => 'ajax_invite_new_researcher',
 	'page arguments' => array(3),
-	'access callback' => '_current_user_access_edit_research_page',
+	'access callback' => 'owner_of_research_project_page',
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
@@ -127,11 +147,12 @@ function research_project_menu(){
 	'description' => t('Return researcher list the project'),
 	'page callback' => 'ajax_refresh_researcher_list',
 	'page arguments' => array(3),
-	'access callback' => '_current_user_access_edit_research_page',
+	'access callback' => 'owner_of_research_project_page',
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
+    
     
     //For inviting people
     $menu['researchpage/participants/page/%'] = array(
@@ -143,6 +164,16 @@ function research_project_menu(){
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
+    );
+    
+    //project page
+    $menu['research/project/%'] = array(
+	'description' => t('Redirect to project node page'),
+	'page callback' => 'redirect_project_node_page',
+	'page arguments' => array(2),
+	'access arguments' => array("access content"),
+	'type' => MENU_CALLBACK,
+	'file' => 'research.pages.inc',
     );
     
     //Participants page
@@ -241,6 +272,23 @@ function research_project_access($op, $node, $account) {
     case "view":
       return TRUE;
   }
+}
+
+/**
+ * Check the account is the owner of current research project
+ */
+function owner_of_research_project_page($pid){
+    //find the owner of project page
+    $sql = "SELECT uid FROM {node} AS n, {research_project_page} AS r WHERE r.id=%d AND r.nid=n.nid";
+    $uid = db_result(db_query($sql,$pid));
+    
+    //get current user
+    global $user;
+    if($user->uid==$uid){
+	return TRUE;
+    }
+    
+    return FALSE;
 }
 
 /**
@@ -558,6 +606,8 @@ function research_project_load($node){
  * Implementation of hook_view().
  */
 function research_project_view($node, $teaser = FALSE, $page = FALSE) {
+    $node = research_project_load($node);
+    
     $path = drupal_get_path('module', 'research_project');
     drupal_add_css($path.'/research_project.css');
     
@@ -566,6 +616,14 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     //check current user permission
     global $user;
     $node->edit_permission = _access_edit_research_page($node, $user);
+    
+    //check if current user is the owner for this project page
+    if($node->uid==$user->uid){
+	$node->is_owner = TRUE;
+    }else{
+	$node->is_owner = FALSE;
+    }
+    
     if($node->edit_permission){
 	drupal_add_css($path.'/jquery/jquery-ui.css');
 	//add setting Drupal.settings.research_project.tool_window
@@ -601,9 +659,9 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     //get project page owner
     
     //get researcher list 
-    $researcher_sql = "SELECT r.uid uid, introduction, u.name name "
-                     ."FROM {project_researchers} AS r, {users} AS u "
-                     ."WHERE r.pid=%d AND u.uid=r.uid "
+    $researcher_sql = "SELECT r.id id, r.uid uid, introduction, u.name name, p.photo photo "
+                     ."FROM {project_researchers} AS r, {users} AS u, {person_profiles} AS p "
+                     ."WHERE r.pid=%d AND u.uid=r.uid AND p.uid=r.uid "
 		     ."ORDER BY r.weight";
     $res2 = db_query($researcher_sql,$node->pid);
     $researcher_list = array();
@@ -723,8 +781,8 @@ function splite_mail_list($mail_content,$split){
  */
 function splite_phone_list($phone_content,$split){
     $phone_list = array();
-    $phone_toke = strtok($phone_content,$split);
-    while($phone_toke!==false){
+    $phone_token = strtok($phone_content,$split);
+    while($phone_token!==false){
         $phone = trim($phone_token);
         if(!empty($phone)&&valid_phone_number($phone)){
             $phone_list[] = $phone;
@@ -788,6 +846,9 @@ function generate_invitation_template($type,$pid){
  * @param
  *  $email
  *    String, email address
+ * @param
+ *  $project
+ *    String, project name
  * @return
  *  user object
  */
@@ -823,6 +884,57 @@ function get_user_by_mail($mail,$project){
 	if(db_result(db_query($check,$user->uid,$id))==0){
 	    $insert = "INSERT into {users_roles}(uid,rid) VALUES(%d,%d)";
 	    db_query($insert,$user->uid,$id);   
+	}
+    }
+    return $user;
+}
+
+/**
+ * get user by phone number, if no user found, generate new one
+ * @param
+ *  $phone
+ *    String, validate phone number
+ * @param
+ *  $project
+ *    String, project name
+ * @return
+ *  user object
+ */
+function get_user_by_phone($phone,$project){
+    $sql = "SELECT uid FROM {person_profiles} WHERE phone='%s'";
+    $uid = db_result(db_query($sql,$phone));
+    
+    $role = 'Person';
+    //new user
+    if($uid==FALSE){
+	$sql = "SELECT rid FROM {role} WHERE name='%s'";
+	$id = db_result(db_query($sql,$role));
+	$roles[$id] = $role;
+        $default_pass = genRandomString(6);   
+	$user_info = array(
+            'name' => $phone,
+            'pass' => $default_pass,
+	    'roles' => $roles,
+            'status' => 1,
+        );             
+        $user = user_save($account,$user_info);        
+	watchdog('New user', 'A new user(@phone) has been added by project @project', array('@phone' => $phone,'@project' => $project), WATCHDOG_INFO);   
+	$user->new_user = TRUE;
+	$user->pass = $default_pass;
+	
+	//add user profile
+	$insert = "INSERT INTO {person_profiles}(uid, phone) VALUES(%d,'%s')";
+	db_query($insert,$user->uid,$phone);
+	
+    }else{
+	$user = user_load($uid);
+	//If person not in user's roles, add it
+	$sql = "SELECT rid FROM {role} WHERE name='%s'";
+	$id = db_result(db_query($sql,$role));
+	$check = "SELECT COUNT(uid) FROM {users_roles} WHERE uid=%d AND rid=%d";
+	if(db_result(db_query($check,$user->uid,$id))==0){
+	    $insert = "INSERT into {users_roles}(uid,rid) VALUES(%d,%d)";
+	    db_query($insert,$uid,$id);   
 	}
     }
     return $user;

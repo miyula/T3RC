@@ -29,15 +29,18 @@
     <h2>
         <span class="sub-title">Researchers</span>
     <?php if($node->edit_permission){ ?>
-        <span class="action-button" onclick="show_new_researcher_window(<?=$node->pid?>)">Add</span><span class="action-button">Edit</span>
+        <span class="action-button" onclick="show_new_researcher_window(<?=$node->pid?>)">Add new</span>
     <?php } ?>
     </h2>
     <ul id="researchers-list">
     <?php foreach($node->researcher_list as $researcher) { ?>
         <li>
-            <img class="staff-photo" src="<?=$module_path?>/images/user_default.gif" alt=""/>
+            <img class="staff-photo" src="<?=empty($researcher['photo'])?"$module_path/images/user_default.gif":$researcher['photo']?>" alt=""/>
             <span class="staff-name"><a href="<?=url("user/".$researcher['uid'])?>" target="_blank"><?=$researcher['name']?></a></span>
             <span class="staff-intro">(<?=$researcher['introduction']?>)</span>
+        <?php if($node->is_owner) { ?>
+            <span class="edit-text">[<a href="javascript:open_edit_researcher_window(<?=$node->pid?>,<?=$researcher['id']?>)">Edit</a>]</span>
+        <?php } ?>
         </li>
     <?php } ?>
     </ul>

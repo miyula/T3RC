@@ -33,6 +33,9 @@
 .staff-intro{
     margin-left:10px;
 }
+.edit-text{
+    margin-left:10px;   
+}
 #invited_emails_textarea{
     width:420px;
     height:100px;

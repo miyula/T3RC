@@ -168,6 +168,82 @@ function invite_new_researcher_form(&$form_state,$pid=0){
     return $form;
 }
 
+
+/**
+ * Menu callback for researchpage/researcher/window/%/edit/%
+ */
+function edit_researcher_window($rid){
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    //get researcher info
+    $sql = "SELECT r.id id, r.uid uid, r.pid pid, r.introduction introduction, r.weight weight, u.name name, u.mail mail "
+          ."FROM {project_researchers} AS r, {users} AS u "
+          ."WHERE r.id=%d AND r.uid=u.uid";
+    
+    $researcher = db_fetch_object(db_query($sql,$rid));
+    if($researcher){
+        //check if the researcher is the owner of the project
+        //TODO: now only the onwer of the project can access to this window
+        global $user;
+        if($user->uid==$researcher->uid){
+            $researcher->is_owner = TRUE;
+        }else{
+            $researcher->is_owner = FALSE;
+        }
+        
+        $content = drupal_get_form("edit_researcher_window_form", $researcher);
+    }else{
+        $content = "<p>Can't find researcher information</p>";
+    }
+    print $content;
+}
+
+/**
+ * Form for edit researcher window
+ */
+function edit_researcher_window_form(&$form_state,$researcher){
+    $form['user-info'] = array(
+        '#value' => "<p>Username: {$researcher->name}</p><p>Email: {$researcher->mail}</p>",  
+    );
+    $form['introduction'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Position Introduction'),
+        '#description' => t('A short introduction for this researcher in your project. The content will be shown on project page'),
+        '#default_value' => $researcher->introduction,
+        '#required' => TRUE,
+    );
+    $form['weight'] = array(
+        '#type' => 'weight',
+        '#title' => t('Weight'),
+        '#default_value' => $researcher->weight,  
+    );
+    $form['buttons'] = array(
+        '#value' => "<input type='button' value='Save' onclick='save_edit_researcher_change({$researcher->pid},{$researcher->id})' />".($researcher->is_owner?"":" <input type='button' value='Remove' />"),
+    );
+    return $form;
+}
+
+/**
+ * Menu callback for researchpage/researcher/window/%/save/%
+ */
+function ajax_save_researcher_window_change($rid){
+    
+    drupal_set_header('Content-Type: text/plain; charset: utf-8');
+    $introduction = $_POST['intro'];
+    $weight = (int) $_POST['weight'];
+    
+    if(empty($introduction)){
+        $status = "0";
+        $message = "Introduction should not be empty.";
+    }else{
+        $update = "UPDATE project_researchers SET introduction='%s', weight=%d WHERE id=%d";
+        db_query($update, $introduction, $weight, $rid);
+        $status = "1";
+    }
+    
+    
+    printf('{"status":%d,"message":"%s"}',$status,$message);
+}
+
 /**
  * Menu callback for researchpage/researcher/checkemail/%
  */
@@ -246,6 +322,8 @@ function invite_participants_page($pid){
     $path = drupal_get_path('module', 'research_project');
     drupal_add_js($path.'/invitation_page.js');
     $content = drupal_get_form('invite_participants_form',$pid);
+    $back_link = l("<< Back to project","research/project/$pid");
+    $content.= "<p>$back_link</p>";
     return $content;
 }
 /**
@@ -351,8 +429,33 @@ function invite_participants_form_submit($form, &$form_state){
     }else if($way='sms'){
         $message = generate_invitation_template('sms',$pid);
         $phone_list = splite_phone_list($lists,',');
+        foreach($phone_list as $phone){
+            //find account, if null create it.
+            $user = get_user_by_phone($phone,$name);            
+    
+            //check if is new user
+            if($user->new_user){
+                $account = "Your login account is your phone number $phone, and default password is {$user->pass}. Please change it as soon as possible.";
+            }else{
+                $account = "";
+            }
+            $message = t($message, array('@account_info'=>$account));
+            
+            //check if user has already linked with project
+            $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
+            if(db_result(db_query($check,$pid,$user->uid))>0){
+                continue;
+            }
+            //bind user with project
+            $insert = "INSERT INTO {project_persons}"
+                     ."(uid,pid,status,created,changed) "
+                     ."VALUES(%d,%d,0,now(),now())";
+            db_query($insert,$user->uid,$pid);
+            //send sms
+            send_sms($phone,$message);
+        }
+        
     }
-    drupal_goto("node/{$project->nid}");
 }
 
 /**
@@ -363,42 +466,61 @@ function ajax_refresh_researcher_list($pid){
     
     $module_path = str_replace("?q=","",url(drupal_get_path('module','research_project')));    
     //get researcher list
-    $sql = "SELECT r.uid uid, r.introduction introduction, u.name name "
-          ."FROM {project_researchers} AS r, {users} AS u "
-          ."WHERE r.pid=%d AND r.uid=u.uid "
+    $sql = "SELECT r.id id, r.uid uid, r.introduction introduction, u.name name, p.photo photo, p.firstname firstname, p.lastname lastname "
+          ."FROM {project_researchers} AS r, {users} AS u ,{person_profiles} AS p "
+          ."WHERE r.pid=%d AND r.uid=u.uid AND p.uid=r.uid "
           ."ORDER by r.weight ";
     $res = db_query($sql,$pid);
     while($researcher=db_fetch_array($res)){
         $content.= "<li>"
-                  ."<img class='staff-photo' src='$module_path/images/user_default.gif' alt=''/>"
+                  ."<img class='staff-photo' src='".(empty($researcher['photo'])?"$module_path/images/user_default.gif":$researcher['photo'])."' alt=''/>"
                   ."<span class='staff-name'><a href='{$researcher['uid']}' target='_blank'>{$researcher['name']}</a></span>"
                   ."<span class='staff-intro'>({$researcher['introduction']})</span>"
+                  ."<span class='edit-text'>[<a href='javascript:open_edit_researcher_window($pid,{$researcher['id']})'>Edit</a>]</span>"
                   ."</li>";    
     }
     print $content;
 }
+
+/**
+ * Menu callback for research/project/%
+ */
+function redirect_project_node_page($pid){
+    $sql = "SELECT nid FROM {research_project_page} WHERE id=%d";
+    $nid = db_result(db_query($sql,$pid));
+    drupal_goto("node/$nid");
+}
+
 /**
  * Menu callback for researchpage/participants/list/%
  */
 function list_participants_page($pid){
-    $sql = "SELECT p.uid uid, u.login login, pf.firstname firstname, pf.lastname lastname, pf.gender gender "
+    $sql = "SELECT p.uid uid, u.access access, pf.firstname firstname, pf.lastname lastname, pf.gender gender "
           ."FROM {project_persons} AS p, {users} AS u, {person_profiles} AS pf "
           ."WHERE p.pid=%d AND p.uid=u.uid AND p.uid=pf.uid ORDER BY p.created";
     $res = db_query($sql,$pid);
     $header = array(
-        "ID",  "Name", "Gender", "Last activity"  
+        "NO.",  "Name", "Gender", "Last activity"  
     );
     $id = 1;
     while($person=db_fetch_object($res)){
-        $rows[] = array(
+        if(empty($person->firstname)&&empty($person->lastname)){
+            $name = "Anonymous";
+        }else{
+            $name = $person->firstname." ".$person->lastname;
+        }
+        $user_link = l($name,"user/{$person->uid}");
+        $rows[] = array(            
             array('data'=>$id),
-            array('data'=>t($person->firstname." ".$person->lastname)),
+            array('data'=>$user_link),
             array('data'=>t($person->gender)),
-            array('data'=>t($person->login)),
+            array('data'=>t(format_interval(time() - $person->access))),
         );
         $id++;
     }
     $content= theme('table', $header, $rows);
+    $back_link = l("<< Back to project","research/project/$pid");
+    $content.= "<p>$back_link</p>";
     return $content;
 }
 ?>
