@@ -592,12 +592,11 @@ function research_project_load($node){
     //get project page info
     $page_sql = "SELECT id, project_code, invitation_way, status FROM {research_project_page} WHERE nid=%d";
     $result = db_query($page_sql, $node->nid);
-    if($result){
-	$page = db_fetch_object($result);
-	$node->pid = $page->id;
-	$node->project_code = $page->project_code;
-	$node->invitation = $page->invitation_way;
-	$node->pstatus = $page->status;
+    if($npage = db_fetch_object($result)){
+	$node->pid = $npage->id;
+	$node->project_code = $npage->project_code;
+	$node->invitation = $npage->invitation_way;
+	$node->pstatus = $npage->status;
     }
     return $node;
 }
@@ -606,7 +605,6 @@ function research_project_load($node){
  * Implementation of hook_view().
  */
 function research_project_view($node, $teaser = FALSE, $page = FALSE) {
-    $node = research_project_load($node);
     
     $path = drupal_get_path('module', 'research_project');
     drupal_add_css($path.'/research_project.css');

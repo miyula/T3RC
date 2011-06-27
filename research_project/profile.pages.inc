@@ -35,7 +35,7 @@ function display_user_profiles_page($person){
     while($project=db_fetch_array($res2)){
         $work_projects[] = $project;
     }
-    print_r($work_projects);
+    //print_r($work_projects);
     $person->work_projects = $work_projects;
     
     $participate_projects = array();
