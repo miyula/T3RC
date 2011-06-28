@@ -175,6 +175,16 @@ function research_project_menu(){
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
+    $menu['researchpage/participants/page/%/remove/%'] = array(
+	'title' => t('Remove person'),
+	'description' => t('Remove the seleted person from project'),
+	'page callback' => 'remove_person_from_project_callback',
+	'page arguments' => array(5),
+        'access callback' => '_current_user_access_edit_research_page',
+	'access arguments' => array(3),
+        'type' => MENU_CALLBACK,
+        'file' => 'research.pages.inc',
+    );
     
     //for project reports
     $menu['researchpage/report/window/%'] = array(
@@ -460,10 +470,18 @@ function _current_user_access_view_research_page($pid){
     }
     
     //check if user in researcher list
-    
+    $check = "SELECT COUNT(id) FROM {project_researchers} WHERE pid=%d AND uid=%d";
+    if(db_result(db_query($check,$pid,$user->uid))>0){
+	return TRUE;        
+    }
     //check if the current page is open
+    $check = "SELECT status FROM {research_project_page} WHERE id=%d";
+    $status = db_result(db_query($check,$pid));
+    if($status==1||$status==2){
+	return TRUE;
+    }
     
-    return TRUE;
+    return FALSE;
 }
 
 /**
@@ -708,7 +726,7 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 	//add setting Drupal.settings.research_project.report_refresh
 	drupal_add_js(array('research_project' => array('report_refresh' => url("researchpage/reports/refresh/"))), 'setting');
 	
-    
+        drupal_add_js($path.'/jquery/jquery.js');
 	drupal_add_js($path.'/jquery/jquery-ui.min.js');
 	drupal_add_js($path.'/research_project.js');
     }
@@ -929,12 +947,12 @@ function generate_invitation_template($type,$pid){
     $link = "http://".$_SERVER['HTTP_HOST'].url("node/$nid");
     if($type=="email"){
 	$content.= "<p>Hi,</p>";
-	$content.= "<p>You are invited to join project $name. Visit $link to get more detials.</p>";
+	$content.= "<p>You are invited to join project $name. To get more detial, visit $link .</p>";
 	$content.= "<P>@account_info<P>";
 	$content.= "<p>Kind regards,</p>";
 	$content.= "<p>$name</p>";
     }else if($type="sms"){
-	$content.= "You are invited to join project $name. You can visit $link to get more details. @account_info.";
+	$content = "Hi, you are invited to join project $name. To get more details, visit $link . @account_info";
     }
     
     
@@ -1010,9 +1028,10 @@ function get_user_by_phone($phone,$project){
 	$sql = "SELECT rid FROM {role} WHERE name='%s'";
 	$id = db_result(db_query($sql,$role));
 	$roles[$id] = $role;
-        $default_pass = genRandomString(6);   
+        $default_pass = genRandomString(6);
+	$name = substr($phone,1);
 	$user_info = array(
-            'name' => $phone,
+            'name' => $name,
             'pass' => $default_pass,
 	    'roles' => $roles,
             'status' => 1,
@@ -1023,7 +1042,7 @@ function get_user_by_phone($phone,$project){
 	$user->pass = $default_pass;
 	
 	//add phone into user profile
-	$insert = "UPDATE {person_profiles}SET phone='%s' WHERE uid=%d";
+	$insert = "UPDATE {person_profiles} SET phone='%s' WHERE uid=%d";
 	db_query($insert,$phone,$user->uid);
 	
     }else{
@@ -1097,13 +1116,29 @@ function send_sms($to,$message){
     
     $postfield = 'username='.$username
                 .'&password='.$password
-                .'&message='.$message
-                .'&msisdn='.$to;
+                .'&batch_data=msisdn,message';
+		
+    //splite the lenght of message, <160
+    if(strlen($message)>160){
+	$length = 154;
+	$messages= str_split($message,$length);
+    }else{
+	$messages[] = $message;
+    }
+    $size = count($messages);
+    $number = 1;
+    foreach($messages as $m){
+	$m = "[$number/$size]".$m;
+	$postfield.= '%0a"'.$to.'","'.$m.'"';
+	$number++;
+    }
+    
+    
     
     //POST session
     if($ch = curl_init($url)){
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST'); 
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $postfield); 
         $data = curl_exec($ch);
         
@@ -1118,7 +1153,7 @@ function send_sms($to,$message){
                 $token = '';
             }
             //Fail to send SMS.
-            drupal_set_message(t("Failed to send message to $to "),'error');
+            drupal_set_message(t("Failed to send message to $to. Because of $token"),'error');
         }
         curl_close($ch);
     }  

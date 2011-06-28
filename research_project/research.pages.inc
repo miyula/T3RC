@@ -429,29 +429,28 @@ function invite_participants_form_submit($form, &$form_state){
             $user = get_user_by_mail($mail,$name);
             //check if is new user
             if($user->new_user){
-                $account = "Your login account is your email address $mail, and default password is {$user->pass}. Please change it as soon as possible.";
+                $account = "Your login account is your email address: $mail, and default password is {$user->pass}. Please change it as soon as possible.";
             }else{
-                $account = "";
+                $account = "You already has an account in T3RC, your username is {$user->name}";
             }
             $message = t($message, array('@account_info'=>$account));
             
             //check if user has already linked with project
             $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
-            if(db_result(db_query($check,$pid,$user->uid))>0){
-                continue;
-            }
-            //bind user with project
-            $insert = "INSERT INTO {project_persons}"
+            if(db_result(db_query($check,$pid,$user->uid))==0){
+                //bind user with project
+                $insert = "INSERT INTO {project_persons}"
                      ."(uid,pid,status,created,changed) "
                      ."VALUES(%d,%d,0,now(),now())";
-            db_query($insert,$user->uid,$pid);
+                db_query($insert,$user->uid,$pid);
+            }            
             //send email
             $subject =  t('@project invites you to join their research',array("@project"=>$name));
             $body = t($message);
             project_send_http_mail($mail,$subject,$body);
         }
     }else if($way='sms'){
-        $message = generate_invitation_template('sms',$pid);
+        $message = generate_invitation_template($way,$pid);
         $phone_list = splite_phone_list($lists,',');
         foreach($phone_list as $phone){
             //find account, if null create it.
@@ -459,22 +458,22 @@ function invite_participants_form_submit($form, &$form_state){
     
             //check if is new user
             if($user->new_user){
-                $account = "Your login account is your phone number $phone, and default password is {$user->pass}. Please change it as soon as possible.";
+                $account = "Your login account is your phone number: $phone, and default password is {$user->pass}. Please change it as soon as possible.";
             }else{
-                $account = "";
+                $account = "You already has an account in T3RC, your username is {$user->name}";
             }
             $message = t($message, array('@account_info'=>$account));
             
             //check if user has already linked with project
             $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
-            if(db_result(db_query($check,$pid,$user->uid))>0){
-                continue;
-            }
-            //bind user with project
-            $insert = "INSERT INTO {project_persons}"
+            if(db_result(db_query($check,$pid,$user->uid))==0){
+                //bind user with project
+                $insert = "INSERT INTO {project_persons}"
                      ."(uid,pid,status,created,changed) "
                      ."VALUES(%d,%d,0,now(),now())";
-            db_query($insert,$user->uid,$pid);
+                db_query($insert,$user->uid,$pid);
+            }
+            
             //send sms
             send_sms($phone,$message);
         }
@@ -519,13 +518,22 @@ function redirect_project_node_page($pid){
  * Menu callback for researchpage/participants/list/%
  */
 function list_participants_page($pid){
-    $sql = "SELECT p.uid uid, u.access access, pf.firstname firstname, pf.lastname lastname, pf.gender gender "
+    $sql = "SELECT p.id id, p.uid uid, u.access access, pf.firstname firstname, pf.lastname lastname, pf.gender gender "
           ."FROM {project_persons} AS p, {users} AS u, {person_profiles} AS pf "
           ."WHERE p.pid=%d AND p.uid=u.uid AND p.uid=pf.uid ORDER BY p.created";
     $res = db_query($sql,$pid);
+    
+    
     $header = array(
-        "NO.",  "Name", "Gender", "Last activity"  
+        "NO.",  "Name", "Gender", "Last activity"
     );
+    
+    //check if current user has permissiont to edit participants list
+    $edit_access = _current_user_access_edit_research_page($pid);
+    if($edit_access){
+        $header[] = "Operation";
+    }
+    
     $id = 1;
     while($person=db_fetch_object($res)){
         if(empty($person->firstname)&&empty($person->lastname)){
@@ -534,16 +542,22 @@ function list_participants_page($pid){
             $name = $person->firstname." ".$person->lastname;
         }
         $user_link = l($name,"user/profiles/{$person->uid}");
-        $rows[] = array(            
+        $row = array(            
             array('data'=>$id),
             array('data'=>$user_link),
             array('data'=>t($person->gender)),
             array('data'=>t(format_interval(time() - $person->access))),
         );
+        if($edit_access){
+            $remove_link = l("[Remove]", "researchpage/participants/page/$pid/remove/{$person->id}");
+            $row[] = $remove_link;
+        }
+        $rows[] = $row;
         $id++;
     }
-    $content= theme('table', $header, $rows);
     $back_link = l("<< Back to project","research/project/$pid");
+    $content = "<p>$back_link</p>";
+    $content.= theme('table', $header, $rows);
     $content.= "<p>$back_link</p>";
     return $content;
 }
@@ -736,4 +750,54 @@ function refresh_reports_list_in_project($pid){
     }
     $content.= "</ul>";
     print $content;
+}
+
+/**
+ * Menu callback for researchpage/participants/page/%/remove/%
+ */
+function remove_person_from_project_callback($ppid){
+    //get remove person info
+    $sql = "SELECT pp.id id, pp.pid pid, u.name name, u.mail mail FROM {project_persons} AS pp, {users} AS u WHERE pp.id=%d AND pp.uid=u.uid";
+    $person = db_fetch_object(db_query($sql,$ppid));
+    if($person){
+        $content = "<h3><font color='red'>You are removing {$person->name} from this project.</font></h3>";
+        $content.= drupal_get_form('remove_person_from_project_form',$person);
+        return $content;
+    }else{
+        return "<p>No such person can be found from project.</p>";
+    }
+}
+/**
+ * Form for remove person from project
+ */
+function remove_person_from_project_form(&$form_state,$person){
+    $cancel_link = "researchpage/participants/list/".$person->pid;
+    $form['pid'] = array(
+        '#type' => 'hidden',
+        '#value' => $person->pid,
+    );
+    $form['ppid'] = array(
+        '#type' => 'hidden',
+        '#value' => $person->id,
+    );
+    $form['sumbit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Remove',
+        '#suffix' => l(" Or cancel?",$cancel_link),
+    );
+    return $form;
+}
+/**
+ * Handle submit action for remove person from project form
+ */
+function remove_person_from_project_form_submit($form, &$form_state){
+    $pid = $form_state['values']['pid'];
+    $id = $form_state['values']['ppid'];
+    
+    $remove = "DELETE FROM {project_persons} WHERE id=%d";
+    if(db_query($remove,$id)){
+        drupal_goto("researchpage/participants/list/$pid");
+    }else{
+        drupal_set_message("Failed to remove person from project.", "error");
+    }
 }

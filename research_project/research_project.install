@@ -27,6 +27,9 @@ function research_project_install(){
 function research_project_uninstall(){
     //Drop tables
     drupal_uninstall_schema('research_project');
+    //delete all research project node
+    $delete = "DELETE FROM {node} where type='researchproject'";
+    db_query($delete);
 }
 
 /**

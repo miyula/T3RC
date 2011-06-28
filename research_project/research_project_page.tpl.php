@@ -60,7 +60,7 @@
 </div>
 <div id="reports-div" class="r-page-part">
     <h2>
-        <span class="sub-title">Reports</span>
+        <span class="sub-title">Documents</span>
     <?php if($node->edit_permission){ ?>
         <span class="action-button" onclick="display_add_new_report_window(<?=$node->pid?>)">Add new</span>
     <?php } ?>
