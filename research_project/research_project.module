@@ -700,7 +700,7 @@ function research_project_insert($node){
     $id=db_result(db_query($sql2,$node->nid));
     $sql3 = "INSERT INTO {project_researchers}"
            ."(uid, pid, created, changed, introduction, status, weight) "
-	   ."VALUES(%d, %d, now(), now(), 'Project creator', 0, -1)";
+	   ."VALUES(%d, %d, now(), now(), 'Project creator', 0, 1)";
     db_query($sql3, $node->uid,$id);
 }
 
@@ -898,6 +898,11 @@ function research_project_user($op, &$edit, &$user){
 	    if($result==FALSE||emtpy($result)){
 		drupal_set_message("Your personal information is empty, please fill it.","status");
 		$url = url("user/profiles/{$user->uid}/edit");
+		header("Location: $url"); 
+		exit;
+	    }else{
+		$destination = $_GET['destination'];
+		$url = url($destination);
 		header("Location: $url"); 
 		exit;
 	    }

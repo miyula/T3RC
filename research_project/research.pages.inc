@@ -156,10 +156,12 @@ function invite_new_researcher_form(&$form_state,$pid=0){
         '#description' => t('A short introduction for this researcher in your project. The content will be shown on project page'),
         '#required' => TRUE,
     );
+    $rank = array(1=>'1',2=>'2',3=>'3');
     $form['weight'] = array(
-        '#type' => 'weight',
-        '#title' => t('Weight'),
-        '#default_value' => 0,  
+        '#type' => 'select',
+        '#title' => t('Rank'),
+        '#options' => $rank,
+        '#default_value' => 3,  
     );
     $form['send-mail'] = array(
         '#type' => 'checkbox',
@@ -215,9 +217,11 @@ function edit_researcher_window_form(&$form_state,$researcher){
         '#default_value' => $researcher->introduction,
         '#required' => TRUE,
     );
+    $rank = array(1=>'1',2=>'2',3=>'3');
     $form['weight'] = array(
-        '#type' => 'weight',
-        '#title' => t('Weight'),
+        '#type' => 'select',
+        '#title' => t('Rank'),
+        '#options' => $rank,
         '#default_value' => $researcher->weight,  
     );
     $form['buttons'] = array(
@@ -360,7 +364,7 @@ function ajax_invite_new_researcher($pid){
                         $mail_status = "Successed"; 
                     }
                     watchdog(
-                        "rproject $pid",
+                        "rproject_$pid",
                         "Send invitation mail to reseacher @mail. @status",
                         array('@mail'=>$email, '@status'=>$mail_status),
                         WATCHDOG_INFO
@@ -485,13 +489,13 @@ function invite_participants_form_submit($form, &$form_state){
             $body = t($message);
             if($result=project_send_http_mail($mail,$subject,$body)){
                 drupal_set_message($result['message'],$result['tag']);
-                $user_link = l($user->name, "user/prifles/".$user->uid);
+                //$user_link = l($user->name, "user/prifles/".$user->uid);
                 if($result['tag']=='error'){
                    $mail_status = "Failed"; 
                 }else if($result['tag']=='status'){
                    $mail_status = "Successed"; 
                 }
-                watchdog("rproject_$pid","Send invitation mail to @user_link. @status",array('@user_link'=>$user_link, '@status'=>$mail_status),WATCHDOG_INFO);
+                watchdog("rproject_$pid","Send invitation mail to @user. @status",array('@user'=>$user->name, '@status'=>$mail_status),WATCHDOG_INFO);
             }
         }
     }else if($way='sms'){
@@ -520,6 +524,7 @@ function invite_participants_form_submit($form, &$form_state){
             
             //send sms
             send_sms($phone,$message);
+            watchdog("rproject_$pid","Send invitation sms to @user",array('@user'=>$user->name),WATCHDOG_INFO);
         }
         
     }
@@ -944,8 +949,16 @@ function message_sending_to_participants_form_submit($form, &$form_state){
         }else{
             drupal_set_message($result['message'],"error");
         }
+        watchdog(
+            "rproject_$pid",
+            "Send mail to @mail_list. Subject: @subject.   Body: @body",
+            array('@mail_list'=>$to_mails, '@subject'=>$subject, '@body'=>$message),
+            WATCHDOG_INFO
+        );    
         
     }else if($way=='sms'){
+        //remove HTML tags
+        $message = strip_tags($message);
         //get all user phone numbers
         $phones_sql = "SELECT phone FROM {person_profiles} AS p, {project_persons} AS u WHERE u.pid=%d AND u.uid=p.uid";
         $res = db_query($phones_sql,$pid);
@@ -956,8 +969,15 @@ function message_sending_to_participants_form_submit($form, &$form_state){
                 continue;
             }
             $to_list[] = $phone;
+            $phone_list.= $phone.', '; 
         }
         send_group_sms($to_list,$message);
+        watchdog(
+            "rproject_$pid",
+            "Send sms to @phone_list. Body: @body",
+            array('@phone_list'=>$phone_list, '@body'=>$message),
+            WATCHDOG_INFO
+        ); 
     }
 }
 /**

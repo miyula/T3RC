@@ -42,13 +42,13 @@
     <div id="user-card-right">
         <h2>Research Projects</h2>
         <div id="user-card-right-info">
-            <dl><dd><?=$person->work_project?></dd><dt>work for</dt></dl>
+            <dl><dd><?=$person->work_project?></dd><dt>Research for</dt></dl>
             <dl><dd><?=$person->participate_project?></dd><dt>participate</dt></dl>
         </div>
     </div>
 </div>
 <div class="projects-list-div">
-    <h2>Projects working for</h2>
+    <h2>Projects research for</h2>
     <?php if($person->user_self&&user_access('Create research page')){?>
        <p><input type='button' value='Create new project' onclick='window.location.href="<?=url('node/add/researchproject')?>"' /></p>  
     <?php } ?>
