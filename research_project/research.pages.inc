@@ -161,6 +161,10 @@ function invite_new_researcher_form(&$form_state,$pid=0){
         '#title' => t('Weight'),
         '#default_value' => 0,  
     );
+    $form['send-mail'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Send an email to inform researcher.',
+    );
     $form['submit'] = array(
         '#value' => '<input id="invite_new_researcher_button" type="button" value="Invite" onclick="invite_new_researcher('.$pid.')" disabled="disabled"  />',
     );
@@ -308,7 +312,7 @@ function ajax_invite_new_researcher($pid){
     $email = $_POST['email'];
     $intro = $_POST['introduction'];
     $weight = (int)$_POST['weight'];
-    
+    $send_mail = $_POST['send'];
     //check email address and introduction
     if(valid_email_address($email)!=1||empty($intro)){
         $status = 0;
@@ -327,8 +331,41 @@ function ajax_invite_new_researcher($pid){
                              ."(uid,pid,created,changed,introduction,weight) "
                              ."VALUES(%d,%d,now(),now(),'%s',%d)";
                 db_query($insert_sql,$user->uid,$pid,$intro,$weight);
+                
                 $status = 1;
                 $message = "Researcher has been added.";
+                
+                //send inform mail if required
+                if($send_mail){
+                    //get project name
+                    $project = db_fetch_object(db_query("SELECT n.title title, p.nid nid FROM {research_project_page} AS p, {node} AS n WHERE p.id=%d AND p.nid=n.nid",$pid));
+                    $subject_tmp = variable_get("project_invite_researcher_mail_subject","@project invite you to be a staff");
+                    $subject = t($subject_tmp,array('@project'=>$project->title));
+                    //TODO set it in variable_get
+                    $body_tmp = "<p>Hi,</p>"
+                           ."<p>@project has invited you to work for their project. The project page is @link.</p>"
+                           ."<p>You can use your @site account to login.</p>"
+                           ."<p>Kind regards,</p>"
+                           ."<p>@site</p>";
+                    $body = t($body_tmp,array(
+                                            '@project'=>$project->title,
+                                            '@link'=>"http://".$_SERVER['HTTP_HOST'].url('node/'.$project->nid),
+                                            '@site'=>T3RC,
+                                        )
+                            );
+                    $result=project_send_http_mail($email,$subject,$body);
+                    if($result['tag']=='error'){
+                        $mail_status = "Failed"; 
+                    }else if($result['tag']=='status'){
+                        $mail_status = "Successed"; 
+                    }
+                    watchdog(
+                        "rproject $pid",
+                        "Send invitation mail to reseacher @mail. @status",
+                        array('@mail'=>$email, '@status'=>$mail_status),
+                        WATCHDOG_INFO
+                    );                    
+                }
             }
         }else{
             $status = 0;
@@ -420,9 +457,8 @@ function invite_participants_form_submit($form, &$form_state){
     if($project=db_fetch_object(db_query($sql,$pid))){
 	$name = $project->title;
     }
-    
+    $message_tmp = generate_invitation_template($way,$pid);
     if($way=='email'){
-        $message = generate_invitation_template('email',$pid);
         $mail_list = splite_mail_list($lists,',');
         foreach($mail_list as $mail){
             //find account, if null create it.
@@ -433,7 +469,7 @@ function invite_participants_form_submit($form, &$form_state){
             }else{
                 $account = "You already has an account in T3RC, your username is {$user->name}";
             }
-            $message = t($message, array('@account_info'=>$account));
+            $message = t($message_tmp, array('@account_info'=>$account));
             
             //check if user has already linked with project
             $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
@@ -447,10 +483,18 @@ function invite_participants_form_submit($form, &$form_state){
             //send email
             $subject =  t('@project invites you to join their research',array("@project"=>$name));
             $body = t($message);
-            project_send_http_mail($mail,$subject,$body);
+            if($result=project_send_http_mail($mail,$subject,$body)){
+                drupal_set_message($result['message'],$result['tag']);
+                $user_link = l($user->name, "user/prifles/".$user->uid);
+                if($result['tag']=='error'){
+                   $mail_status = "Failed"; 
+                }else if($result['tag']=='status'){
+                   $mail_status = "Successed"; 
+                }
+                watchdog("rproject_$pid","Send invitation mail to @user_link. @status",array('@user_link'=>$user_link, '@status'=>$mail_status),WATCHDOG_INFO);
+            }
         }
     }else if($way='sms'){
-        $message = generate_invitation_template($way,$pid);
         $phone_list = splite_phone_list($lists,',');
         foreach($phone_list as $phone){
             //find account, if null create it.
@@ -462,7 +506,7 @@ function invite_participants_form_submit($form, &$form_state){
             }else{
                 $account = "You already has an account in T3RC, your username is {$user->name}";
             }
-            $message = t($message, array('@account_info'=>$account));
+            $message = t($message_tmp, array('@account_info'=>$account));
             
             //check if user has already linked with project
             $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
@@ -523,6 +567,11 @@ function list_participants_page($pid){
           ."WHERE p.pid=%d AND p.uid=u.uid AND p.uid=pf.uid ORDER BY p.created";
     $res = db_query($sql,$pid);
     
+    $tool_bar = "<div id='project-tool-bar'>"
+                ."<input type='button' value='+Invite new' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/page/$pid").'"'."'/>"
+                ."<input type='button' value='Send message' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/message/send/$pid").'"'."'/>"
+                ."<input type='button' value='View sending history' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/message/history/$pid").'"'."'/>"
+               ."</div>";
     
     $header = array(
         "NO.",  "Name", "Gender", "Last activity"
@@ -557,6 +606,7 @@ function list_participants_page($pid){
     }
     $back_link = l("<< Back to project","research/project/$pid");
     $content = "<p>$back_link</p>";
+    $content.= $tool_bar;
     $content.= theme('table', $header, $rows);
     $content.= "<p>$back_link</p>";
     return $content;
@@ -800,4 +850,105 @@ function remove_person_from_project_form_submit($form, &$form_state){
     }else{
         drupal_set_message("Failed to remove person from project.", "error");
     }
+}
+/**
+ * Menu callback for researchpage/participants/message/send/%
+ */
+function send_message_to_participants_page($pid){
+    $content = drupal_get_form('message_sending_to_participants_form',$pid);
+    return $content;
+}
+/**
+ * Form for message sending
+ */
+function message_sending_to_participants_form(&$form_state,$pid){
+    $option = array(
+        'email' => 'By email',
+        'sms' => 'By SMS',
+    );
+    $form['pid'] = array(
+        '#type' => 'hidden',
+        '#value' => $pid,
+    );
+    $form['send-way'] = array(
+        "#type" => 'radios',
+        "#title" => t('Send way'),
+        "#description" => t('The way to send message'),
+        '#options' => $option,
+        '#default_value' => 'email',
+        '#required' => TRUE,
+    );
+    $form['subject'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Subject'),
+        '#description' => t('If you are sending SMS, just left subject empty'),
+    );
+    $form['message'] = array(
+        "#type" => 'textarea',
+        "#title" => 'Message content',
+        "#description" => 'If you are sending SMS, please keep it concise.',
+        '#required' => TRUE,
+    );
+    $form['submit'] = array(
+        "#type" => 'submit',
+        '#value' => 'Send'
+    );
+    return $form;
+}
+/**
+ * Handle validation for form message sending
+ */
+function message_sending_to_participants_form_validate($form, &$form_state){
+    $way = $form_state['values']['send-way'];
+    $message = $form_state['values']['message'];
+    if($way=='sms'){
+        $message = strip_tags($message);
+        if(strlen($message)>460){
+            form_set_error('message','The message is too long.');
+        }
+    }else if($way=='email'){
+        $subject = trim(strip_tags($form_state['values']['subject']));
+        if(strlen($subject)==0){
+            form_set_error('subject','Plesase input a subject for email.');
+        }
+    }
+}
+/**
+ * Handle submit for form message sending
+ */
+function message_sending_to_participants_form_submit($form, &$form_state){
+    $pid = $form_state['values']['pid'];
+    $way = $form_state['values']['send-way'];
+    $message = $form_state['values']['message'];
+    
+    if($way=='email'){
+        //get all user email
+        $mails_sql = "SELECT u.mail mail FROM {users} AS u, {project_persons} AS p WHERE p.pid=%d AND p.uid = u.uid";
+        $res = db_query($mails_sql,$pid);
+        
+        while($record=db_fetch_object($res)){
+            $mail = $record->mail;
+            if(empty($mail)){
+                continue;
+            }
+            $mail_list[] = $mail;            
+            $to_mails.= $mail.', '; 
+        }
+        $subject = trim(strip_tags($form_state['values']['subject']));
+        $result = project_send_http_mail($mail_list,$subject,$message);
+        if($result['tag'] == 'status'){
+            drupal_set_message("Successed to send mail to $to_mails","status");
+        }else{
+            drupal_set_message($result['message'],"error");
+        }
+        
+    }else if($way=='sms'){
+        
+    }
+}
+/**
+ * Menu callback for researchpage/participants/message/history/%
+ */
+function list_message_sending_records_page($pid){
+    
 }

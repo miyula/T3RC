@@ -80,10 +80,16 @@ function invite_new_researcher(id){
     var email = $('#edit-email').val();
     var intro = $.trim($('#edit-introduction').val());
     var weight = $('#edit-weight').val();
+    var send = $('#edit-send-mail').attr('checked');
     if(intro){
+        if(send){
+            var send_mail = 1;
+        }else{
+            send_mail = 0;
+        }
         var url = Drupal.settings.research_project.research_invite_new+id;
-        $.post(url,{"email":email,"introduction":intro,"weight":weight},function(data){
-            var result = jQuery.parseJSON(data);
+        $.post(url,{"email":email,"introduction":intro,"weight":weight,"send":send_mail},function(data){
+            /*var result = jQuery.parseJSON(data);
             if(result.status){
                 if(result.status==1){
                     $("#edit-dialog-div").dialog('close');
@@ -94,7 +100,10 @@ function invite_new_researcher(id){
                 }               
             }else{
                 alert("Unknow error happened.");
-            }
+            }*/
+            $("#edit-dialog-div").dialog('close');
+            var refresh = Drupal.settings.research_project.research_refresh+id;
+            $("#researchers-list").load(refresh);
         });
     }else{
         alert("Please input a introduction for your researcher.");

@@ -19,6 +19,14 @@ function research_project_install(){
     
     //Create tables
     drupal_install_schema('research_project');
+    
+    //Create user profile for every existed user
+    $users_sql = "SELECT uid FROM {users}";
+    $res = db_query($users_sql);
+    $insert = "INSERT INTO {person_profiles}(uid) VALUES(%d)";
+    while($user=db_fetch_object($res)){
+        db_query($insert,$user->uid);
+    }
 }
 
 /**
