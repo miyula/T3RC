@@ -50,9 +50,9 @@ function display_user_profiles_page($person){
     //check current user
     global $user;
     if($user->uid==$person->uid){
-        $person->access_edit_profile = TRUE;
+        $person->user_self = TRUE;
     }else{
-        $person->access_edit_profile = FALSE;
+        $person->user_self = FALSE;
     }
     
     $content = theme('project_user_profile_page',$person);

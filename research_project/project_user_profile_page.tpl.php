@@ -12,7 +12,7 @@
     <div id="user-card-left">
         <dl><?php if(!empty($person->profiles->photo)){
 	    echo "<img src='{$person->profiles->photo}' class='profile-head-photo'/>";
-	}if($person->access_edit_profile) { ?>
+	}if($person->user_self) { ?>
         <input type="button" value="Edit my profile" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/> 
         <input type="button" value="Admin account" onclick="window.location.href='<?=url("user/{$person->uid}/edit")?>'" />
         <?php } ?>
@@ -49,6 +49,9 @@
 </div>
 <div class="projects-list-div">
     <h2>Projects working for</h2>
+    <?php if($person->user_self&&user_access('Create research page')){?>
+       <p><input type='button' value='Create new project' onclick='window.location.href="<?=url('node/add/researchproject')?>"' /></p>  
+    <?php } ?>
     <ul class="projects-list">
     <?php foreach($person->work_projects as $project){ ?>
         <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span></li>

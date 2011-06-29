@@ -283,6 +283,13 @@ function research_project_menu(){
     
     
     //Research Tools
+    $menu['research/tools'] = array(
+	'title' => t('Research Tools'),
+	'description' => t('Display list of the given research tools'),
+	'page callback' => 'display_research_tool_list_page',
+	'access arguments' => array("access content"),
+	'type' => MENU_CALLBACK,
+    );
     $menu['research/tools/%'] =array(
 	'title arguments' => array(2),
 	'title callback' => 'fetch_research_tool_name',
@@ -531,6 +538,35 @@ function fetch_research_tool_name($tool_id){
         $content="No such tool";
         return $content;
     }
+}
+
+
+/**
+ * Menu callback for research/tools
+ */
+function display_research_tool_list_page(){
+    //get tool list
+    $sql = "SELECT id, name, description, logo from {research_tool} ORDER BY created";
+    $res = db_query($sql);
+    $header = array(
+        "Logo",  "Tool Name", "Description"  
+    );
+    while($tool=db_fetch_object($res)){
+        if(empty($tool->logo)){
+            $logo = "&lt;No logo&gt; ";
+        }else{
+            $logo = "<img src='{$tool->logo}' height='40px' alt='{$tool->name}'/>";
+        }
+        $view_link = "research/tools/{$tool->id}";
+        $short_des = substr($tool->description,0,40);
+        $rows[] = array(
+            array('data'=>$logo),  
+            array('data'=>l($tool->name,$view_link)),
+            array('data'=>l($short_des,$view_link)),
+        );
+    }
+    $content= theme('table', $header, $rows);
+    return $content;
 }
 
 /**
@@ -1143,8 +1179,11 @@ function project_send_http_mail($to_mail,$subject,$body){
 /**
  * Send short message
  * @param
- *   $to, phonenumber
- *   $message, string
+ *   $to
+ *     string, phonenumber
+ * @param
+ *   $message
+ *     string
  */
 function send_sms($to,$message){
     $username = variable_get('sms_server_username', '');
@@ -1160,17 +1199,16 @@ function send_sms($to,$message){
     if(strlen($message)>160){
 	$length = 154;
 	$messages= str_split($message,$length);
+	$size = count($messages);
+	$number = 1;
+	foreach($messages as $m){
+	    $m = "[$number/$size]".$m;
+	    $postfield.= '%0a"'.$to.'","'.$m.'"';
+	    $number++;
+	}
     }else{
-	$messages[] = $message;
-    }
-    $size = count($messages);
-    $number = 1;
-    foreach($messages as $m){
-	$m = "[$number/$size]".$m;
-	$postfield.= '%0a"'.$to.'","'.$m.'"';
-	$number++;
-    }
-    
+	$postfield.= '%0a"'.$to.'","'.$message.'"';
+    }    
     
     
     //POST session
@@ -1197,6 +1235,72 @@ function send_sms($to,$message){
     }  
 }
 
+
+/**
+ * Send short message to a group of phone
+ * @param
+ *   $to_list
+ *     Array, phonenumbers
+ * @param
+ *   $message
+ *     string
+ */
+function send_group_sms($to_list,$message){
+    $username = variable_get('sms_server_username', '');
+    $password = variable_get('sms_server_password', '');
+    $url = variable_get('sms_server_address', '');
+    $port = 80;
+    
+    $postfield = 'username='.$username
+                .'&password='.$password
+                .'&batch_data=msisdn,message';
+		
+    //splite the lenght of message, <160
+    if(strlen($message)>160){
+	$length = 154;
+	$messages= str_split($message,$length);
+	$size = count($messages);
+	foreach($to_list as $to){
+	    $number = 1;
+	    foreach($messages as $m){
+		$m = "[$number/$size]".$m;
+		$postfield.= '%0a"'.$to.'","'.$m.'"';
+		$number++;
+	    }
+	    $phone_list.= $to.", ";
+	}  
+    }else{
+	foreach($to_list as $to){
+	    $postfield.= '%0a"'.$to.'","'.$message.'"';
+	    $phone_list.= $to.", ";
+	}
+	
+    }
+    
+    
+    //POST session
+    if($ch = curl_init($url)){
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST'); 
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postfield); 
+        $data = curl_exec($ch);
+        
+        //$data = status_code|status_description|batch_id e.g. 0|IN_PROGRESS|147166645
+        $token = strtok($data, "|");
+        if($token !== false&&$token==0){
+            drupal_set_message(t("Send message to $phone_list successfully"),'status');
+        }else{
+            if($token !== false){
+                $token = strtok("|");
+            }else{
+                $token = '';
+            }
+            //Fail to send SMS.
+            drupal_set_message(t("Failed to send message. Because of $token"),'error');
+        }
+        curl_close($ch);
+    }  
+}
 /**
  * Generate Random String
  * Code from http://www.ccvita.com/25.html

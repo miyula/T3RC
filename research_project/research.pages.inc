@@ -855,7 +855,10 @@ function remove_person_from_project_form_submit($form, &$form_state){
  * Menu callback for researchpage/participants/message/send/%
  */
 function send_message_to_participants_page($pid){
-    $content = drupal_get_form('message_sending_to_participants_form',$pid);
+    $back_link = l("<< Back to participants page","researchpage/participants/list/$pid");
+    $content.= "<p>$back_link</p>";
+    $content.= drupal_get_form('message_sending_to_participants_form',$pid);
+    $content.= "<p>$back_link</p>";
     return $content;
 }
 /**
@@ -943,7 +946,18 @@ function message_sending_to_participants_form_submit($form, &$form_state){
         }
         
     }else if($way=='sms'){
-        
+        //get all user phone numbers
+        $phones_sql = "SELECT phone FROM {person_profiles} AS p, {project_persons} AS u WHERE u.pid=%d AND u.uid=p.uid";
+        $res = db_query($phones_sql,$pid);
+        $to_list = array();
+        while($record=db_fetch_object($res)){
+            $phone = $record->phone;
+            if(empty($phone)||(valid_phone_number($phone)==FALSE)){
+                continue;
+            }
+            $to_list[] = $phone;
+        }
+        send_group_sms($to_list,$message);
     }
 }
 /**
