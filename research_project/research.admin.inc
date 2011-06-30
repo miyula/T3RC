@@ -257,3 +257,84 @@ function sms_settings_info_form_submit($form, &$form_state){
     }
     
 }
+
+/**
+ * Menu callback for admin/settings/researchproject
+ */
+function researchproject_settings_callback(){
+    return drupal_get_form('message_template_form');
+}
+
+/**
+ * Form for message template settings
+ */
+function message_template_form(){
+    $form['inform_researcher'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Email template for inform researcher'),
+        '#default_value' => variable_get('resarch_project_inform_researcher_tpl',''),
+        '#required' => TRUE,
+    );
+    $form['invite_participant_mail_subject'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Email subject template for invite new participant'),
+        '#default_value' => variable_get('resarch_project_invite_mail_subject_tpl',''),
+        '#description' => t('This is mainly use for sending account info.'),
+        '#required' => TRUE,
+    );
+    $form['invite_participant_new_mail'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Email template for invite new participant with new created account'),
+        '#default_value' => variable_get('resarch_project_invite_mail_new_tpl',''),
+        '#description' => t('This mail is sended when the participant is new for the site.'),
+        '#required' => TRUE,
+    );
+    $form['invite_participant_mail'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Email template for invite new participant'),
+        '#default_value' => variable_get('resarch_project_invite_mail_tpl',''),
+        '#description' => t('This mail is mainly use for sending account info.'),
+        '#required' => TRUE,
+    );
+    $form['invite_participant_sms'] = array(
+        '#type' => 'textarea',
+        '#title' => t('SMS template for invite new participant'),
+        '#default_value' => variable_get('resarch_project_invite_SMS_tpl',''),
+        '#description' => t('This is mainly use for sending account info. Please keep it as short as possible. Less than 160 chars is suggestion'),
+        '#required' => TRUE,
+    );
+    $form['invite_participant_new_sms'] = array(
+        '#type' => 'textarea',
+        '#title' => t('SMS template for invite new participant with new created account'),
+        '#default_value' => variable_get('resarch_project_invite_SMS_new_tpl',''),
+        '#description' => t('This is sended when the participant is new for the site. Please keep it as short as possible. Less than 160 chars is suggestion'),
+        '#required' => TRUE,
+    );
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Save',
+    );
+    return $form;
+    
+}
+
+/**
+ * Handle submit for message template settings form
+ */
+function message_template_form_submit($form, &$form_state){
+    $inform = $form_state['values']['inform_researcher'];
+    $invite_mail_subject = $form_state['values']['invite_participant_mail_subject'];
+    $invite_mail_new = $form_state['values']['invite_participant_new_mail'];
+    $invite_mail = $form_state['values']['invite_participant_mail'];
+    $invite_sms_new = $form_state['values']['invite_participant_new_sms'];
+    $invite_sms = strip_tags($form_state['values']['invite_participant_sms']);
+    
+    variable_set('resarch_project_inform_researcher_tpl', $inform);
+    variable_set('resarch_project_invite_mail_subject_tpl',$invite_mail_subject);
+    variable_set('resarch_project_invite_mail_new_tpl',$invite_mail_new);
+    variable_set('resarch_project_invite_SMS_new_tpl',$invite_sms_new);
+    variable_set('resarch_project_invite_mail_tpl', $invite_mail);
+    variable_set('resarch_project_invite_SMS_tpl', $invite_sms);
+    
+    
+}

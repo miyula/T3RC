@@ -343,20 +343,21 @@ function ajax_invite_new_researcher($pid){
                 if($send_mail){
                     //get project name
                     $project = db_fetch_object(db_query("SELECT n.title title, p.nid nid FROM {research_project_page} AS p, {node} AS n WHERE p.id=%d AND p.nid=n.nid",$pid));
-                    $subject_tmp = variable_get("project_invite_researcher_mail_subject","@project invite you to be a staff");
-                    $subject = t($subject_tmp,array('@project'=>$project->title));
-                    //TODO set it in variable_get
-                    $body_tmp = "<p>Hi,</p>"
-                           ."<p>@project has invited you to work for their project. The project page is @link.</p>"
-                           ."<p>You can use your @site account to login.</p>"
-                           ."<p>Kind regards,</p>"
-                           ."<p>@site</p>";
+                    $subject_tmp = "@project_name has invited you to join them as a researcher.";
+                    $subject = t($subject_tmp,array('@project_name'=>$project->title));
+                    
+                    $body_tmp = variable_get('resarch_project_inform_researcher_tpl','');
+                    $site_name = variable_get('site_name','');
+                    $site_link = "http://".$_SERVER['HTTP_HOST'].url("");
+                    $login_link = "http://".$_SERVER['HTTP_HOST'].url("user");
                     $body = t($body_tmp,array(
-                                            '@project'=>$project->title,
-                                            '@link'=>"http://".$_SERVER['HTTP_HOST'].url('node/'.$project->nid),
-                                            '@site'=>T3RC,
-                                        )
-                            );
+                        '@user_name' => $user->name,
+                        '@project_name' => $project->title,
+                        '@project_link' => "http://".$_SERVER['HTTP_HOST'].url('node/'.$project->nid),
+                        '@site_link' => $site_link,
+                        '@login_link' => $login_link,
+                        '@site_name' => $site_name,
+                    ));
                     $result=project_send_http_mail($email,$subject,$body);
                     if($result['tag']=='error'){
                         $mail_status = "Failed"; 
@@ -417,13 +418,18 @@ function invite_participants_form(&$form_state,$pid=0){
         '#description' => t('Please split each item by ",". e.g. +358449893823,+35832423235,+358233549509'),
         '#required' => TRUE,
     );
-    /*$form['message'] = array(
+    $form['subjet-title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Mail subject'),
+        '#description' => t('If you are send sms, keep it empty!'),
+    );
+    $form['message'] = array(
         '#type' => 'textarea',
         '#title' => t('Invitating message'),
-        '#description' => t('This message will be sent with the invitation content'),
+        '#description' => t('This message will be sent to all persons on above invitation list'),
         '#required' => TRUE,
         '#default_value' => generate_invitation_template('email',$pid),
-    );*/
+    );
     $form['email-message'] = array(
         '#type' => 'hidden',
         '#value' => generate_invitation_template('email',$pid),
@@ -453,7 +459,8 @@ function invite_participants_form_submit($form, &$form_state){
     $pid = $form_state['values']['project'];
     $way = $form_state['values']['invite-way'];
     $lists = $form_state['values']['invitation-list'];
-    //$message = $form_state['values']['message'];
+    $p_message = $form_state['values']['message'];
+    $p_subject = $form_state['values']['subjet-title'];
     
     //get project info
     $sql = "SELECT n.nid nid, title from {node} AS n, {research_project_page} AS r "
@@ -461,19 +468,41 @@ function invite_participants_form_submit($form, &$form_state){
     if($project=db_fetch_object(db_query($sql,$pid))){
 	$name = $project->title;
     }
-    $message_tmp = generate_invitation_template($way,$pid);
+    $project_link = "http://".$_SERVER['HTTP_HOST'].url("research/project/$pid");
+    $login_link = "http://".$_SERVER['HTTP_HOST'].url("user");
+    //$message_tmp = generate_invitation_template($way,$pid);
     if($way=='email'){
         $mail_list = splite_mail_list($lists,',');
+        $message_new_tmp = variable_get('resarch_project_invite_mail_new_tpl','');
+        $message_tmp = variable_get('resarch_project_invite_mail_tpl','');
         foreach($mail_list as $mail){
             //find account, if null create it.
             $user = get_user_by_mail($mail,$name);
             //check if is new user
             if($user->new_user){
-                $account = "Your login account is your email address: $mail, and default password is {$user->pass}. Please change it as soon as possible.";
+                $message = t($message_new_tmp, array(
+                    '@project_name' => $name,
+                    '@project_link' => "<a href='$project_link'>$project_link</a>",
+                    '@login_link' => $login_link,
+                    '@user_name' => $user->name,
+                    '@password' => $user->pass,
+                    '@account_edit_link' => "http://".$_SERVER['HTTP_HOST'].url("user/{$user->uid}/edit"),
+                    '@profile_edit_link' => "http://".$_SERVER['HTTP_HOST'].url("user/profiles/{$user->uid}/edit"),
+                    '@site_name' => variable_get('site_name',''), 
+                    )
+                );
+                
             }else{
-                $account = "You already has an account in T3RC, your username is {$user->name}";
+                $message = t($message_tmp, array(
+                    '@project_name' => $name,
+                    '@project_link' => $project_link,
+                    '@user_name' => $user->name,
+                    '@site_name' => variable_get('site_name',''),
+                    )
+                );
+                
             }
-            $message = t($message_tmp, array('@account_info'=>$account));
+            
             
             //check if user has already linked with project
             $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
@@ -484,10 +513,26 @@ function invite_participants_form_submit($form, &$form_state){
                      ."VALUES(%d,%d,0,now(),now())";
                 db_query($insert,$user->uid,$pid);
             }            
-            //send email
-            $subject =  t('@project invites you to join their research',array("@project"=>$name));
-            $body = t($message);
-            if($result=project_send_http_mail($mail,$subject,$body)){
+            
+            //send researcher defines email
+            if($result=project_send_http_mail($mail,$p_subject,$p_message)){
+                drupal_set_message($result['message'],$result['tag']);
+                //$user_link = l($user->name, "user/prifles/".$user->uid);
+                if($result['tag']=='error'){
+                   $mail_status = "Failed"; 
+                }else if($result['tag']=='status'){
+                   $mail_status = "Successed"; 
+                }
+                watchdog("rproject_$pid",
+                    "Send mail to @user. @status. Subject: @subject. Body: @body.",
+                    array('@user'=>$user->name, '@status'=>$mail_status, '@subject'=>$p_subject, '@body'=>$p_message),
+                    WATCHDOG_INFO
+                );
+            }
+            
+            //send default email
+            $subject =  t(variable_get('resarch_project_invite_mail_subject_tpl',''),array("@project_name"=>$name));
+            if($result=project_send_http_mail($mail,$subject,$message)){
                 drupal_set_message($result['message'],$result['tag']);
                 //$user_link = l($user->name, "user/prifles/".$user->uid);
                 if($result['tag']=='error'){
@@ -500,15 +545,28 @@ function invite_participants_form_submit($form, &$form_state){
         }
     }else if($way='sms'){
         $phone_list = splite_phone_list($lists,',');
+        $message_new_tmp = variable_get('resarch_project_invite_new_SMS_tpl','');
+        $message_tmp = variable_get('resarch_project_invite_SMS_tpl','');
         foreach($phone_list as $phone){
             //find account, if null create it.
             $user = get_user_by_phone($phone,$name);            
     
             //check if is new user
             if($user->new_user){
-                $account = "Your login account is your phone number: $phone, and default password is {$user->pass}. Please change it as soon as possible.";
+                $message = t($message_new_tmp, array(
+                    '@project_name' => $name,
+                    '@project_link' => $project_link,
+                    '@user_name' => $user->name,
+                    '@password' => $user->pass,
+                    '@site_name' => variable_get('site_name',''),
+                ));    
             }else{
-                $account = "You already has an account in T3RC, your username is {$user->name}";
+                $message = t($message_tmp, array(
+                    '@project_name' => $name,
+                    '@project_link' => $project_link,
+                    '@user_name' => $user->name,
+                    '@site_name' => variable_get('site_name',''),
+                ));
             }
             $message = t($message_tmp, array('@account_info'=>$account));
             
@@ -522,7 +580,12 @@ function invite_participants_form_submit($form, &$form_state){
                 db_query($insert,$user->uid,$pid);
             }
             
-            //send sms
+            //send researcher defined sms
+            $p_message = strip_tags($p_message);
+            send_sms($phone,$p_message);
+            watchdog("rproject_$pid","Send invitation sms to @user. Message: @message",array('@user'=>$user->name,'@message'=>$p_message),WATCHDOG_INFO);
+        
+            //send default sms
             send_sms($phone,$message);
             watchdog("rproject_$pid","Send invitation sms to @user",array('@user'=>$user->name),WATCHDOG_INFO);
         }

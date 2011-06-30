@@ -104,10 +104,11 @@ function project_user_profiles_form(&$form_state,$user){
         '#default_value' => empty($user->profiles->phone)?"":$user->profiles->phone,
     );
     $form['birthday'] = array(
-        '#type' => 'date',
+        '#type' => 'textfield',
         '#title' => 'Birthday',
-        '#required' => TRUE,
-        '#default_value' => empty($user->profiles->byear)?"":array('year' => $user->profiles->byear, 'month' => $user->profiles->bmonth, 'day'=>$user->profiles->bday),
+        '#required' => FALSE,
+        '#description' => t('Data format is YYYY-MM-DD. e.g. 2000-06-21'),
+        '#default_value' => empty($user->profiles->birthday)?"":$user->profiles->birthday,    
     );
     $form['picture'] = array(
         '#type'  => 'file',
@@ -127,6 +128,22 @@ function project_user_profiles_form(&$form_state,$user){
     return $form;
 }
 /**
+ * Handle validate for profile form
+ */
+function project_user_profiles_form_validate($form,&$form_state){
+    $phone = $form_state['values']['phone'];
+    if(!empty($phone)&&!valid_phone_number($phone)){
+        form_set_error('phone','Invalide phone number input.');
+    }
+    $birthday = $form_state['values']['birthday'];
+    if(!empty($birthday)){
+        //validate birthday value
+        if(!preg_match('/^[1-2][0-9][0-9][0-9][-][0-9][0-9][-][0-9][0-9]$/', $birthday)){
+            form_set_error('birthday','Invalide birthday input.');
+        }
+    }
+}
+/**
  * Handel submit for user profile form
  */
 function project_user_profiles_form_submit($form,&$form_state){
@@ -134,8 +151,7 @@ function project_user_profiles_form_submit($form,&$form_state){
     $firstname = $form_state['values']['firstname'];
     $lastname = $form_state['values']['lastname'];
     $phone = $form_state['values']['phone'];
-    $birthdayArray = $form_state['values']['birthday'];
-    $birthday = $birthdayArray['year'].'-'.$birthdayArray['month'].'-'.$birthdayArray['day'];
+    $birthday = $form_state['values']['birthday'];
     $gender = $form_state['values']['gender'];
     
     //Upload image

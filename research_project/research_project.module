@@ -56,6 +56,14 @@ function research_project_menu(){
         'type' => MENU_NORMAL_ITEM,
         'file' => 'research.admin.inc',
     );
+    $menu['admin/settings/researchproject'] = array(
+	'title' => t('Reseach project management'),
+	'description' => t('Invitation email content setting'),
+	'page callback' => 'researchproject_settings_callback',
+	'access arguments' => array('administer site configuration'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'research.admin.inc',
+    );
     
     //sub pages for research page
     
@@ -915,7 +923,7 @@ function research_project_user($op, &$edit, &$user){
 function load_user_profiles(&$user){
     //check view user profile permission
     if(access_view_user_profiles($user->uid)){
-	$sql = "SELECT phone, firstname, lastname, photo, ((YEAR(CURDATE())-YEAR(birthday))-(RIGHT(CURDATE(),5)<RIGHT(DATE(birthday),5))) age, YEAR(birthday) byear, MONTH(birthday) bmonth, DAY(birthday) bday, gender FROM {person_profiles} WHERE uid=%d";
+	$sql = "SELECT phone, firstname, lastname, photo, IF(birthday='', '', ((YEAR(CURDATE())-YEAR(birthday))-(RIGHT(CURDATE(),5)<RIGHT(birthday,5)))) age, birthday, gender FROM {person_profiles} WHERE uid=%d";
 	if($profile=db_fetch_object(db_query($sql,$user->uid))){
 	    $user->profiles = $profile;        
 	}
@@ -986,7 +994,7 @@ function valid_phone_number($phone){
     if (preg_match('/^[+][0-9]*$/', $phone)) {
 	return TRUE;
     }else{
-	drupal_set_message("Invalid phone number $phone.Phone number should starts with e.g. '+358'",'error');
+	drupal_set_message("Invalid phone number $phone. Phone number should starts with e.g. '+358'",'error');
 	return FALSE;
     }
 }
@@ -1011,12 +1019,11 @@ function generate_invitation_template($type,$pid){
     $link = "http://".$_SERVER['HTTP_HOST'].url("node/$nid");
     if($type=="email"){
 	$content.= "<p>Hi,</p>";
-	$content.= "<p>You are invited to join project $name. To get more detial, visit $link .</p>";
-	$content.= "<P>@account_info<P>";
+	$content.= "<p>You are invited to join project $name. Project page: <a href='$link'>$link</a> .</p>";
 	$content.= "<p>Kind regards,</p>";
 	$content.= "<p>$name</p>";
     }else if($type="sms"){
-	$content = "Hi, you are invited to join project $name. To get more details, visit $link . @account_info";
+	$content = "Hi, you are invited to join project $name. Project page: $link .";
     }
     
     

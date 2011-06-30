@@ -27,6 +27,37 @@ function research_project_install(){
     while($user=db_fetch_object($res)){
         db_query($insert,$user->uid);
     }
+    
+    //variable set for default message tempaltes
+    $inform_tpl = "<p>Hi @user_name,</p>"
+                 ."<p>@project_name has invited you to join them as a researcher. The project page is @project_link.</p>"
+                 ."<p>You can use your @site_name (@site_link) account to login @login_link.</p>"
+                 ."<p>Kind regards,</p>"
+                 ."<p>@site_name</p>";
+    $subject_tpl = "@project_name has invited you to join them as a researcher.";
+    $invite_mail_tpl = "<p>Hi,</p>"
+	              ."<p>You are invited to join @project_name. To get more detial, visit @project_link.</p>"
+	              ."<P>You already has an account in @site_name, your username is @user_name.<P>"
+                      ."<p>Kind regards,</p>"
+	              ."<p>@site_name</p>";
+    $invite_mail_new_tpl = "<p>Hi,</p>"
+	                  ."<p>You are invited to join @project_name. To get more detial, visit @project_link.</p>"
+	                  ."<P>You may now log in to @login_link using the following username and password:<P>"
+                          ."<P>username: @user_name</p>"
+                          ."<p>password: @password</p>"
+                          ."<p>After login, you can change your username and personal informaiton in @account_edit_link and @profile_edit_link .</p>"
+                          ."<p>Kind regards,</p>"
+	                  ."<p>@site_name</p>";
+
+    $invite_sms_tpl = "Hi, you are invited to join @project_name. To get more details, visit @project_link .You already has an account, your username is @user_name.";
+    $invite_sms_new_tpl = "Hi, you are invited to join @project_name. Link is @project_link. Your new username is @user_name, password is @password"; 
+    variable_set('resarch_project_inform_researcher_tpl', $inform_tpl);
+    variable_set('resarch_project_invite_mail_subject_tpl',$subject_tpl);
+    variable_set('resarch_project_invite_mail_new_tpl',$invite_mail_new_tpl);
+    variable_set('resarch_project_invite_SMS_new_tpl',$invite_sms_new_tpl);
+    variable_set('resarch_project_invite_mail_tpl', $invite_mail_tpl);
+    variable_set('resarch_project_invite_SMS_tpl', $invite_sms_tpl);
+    
 }
 
 /**
@@ -311,7 +342,8 @@ function research_project_schema(){
                 'not null' => FALSE,
             ),
             'birthday' => array(
-                'type' => 'datetime',
+                'type' => 'varchar',
+                'length' => 10,
                 'not null' => FALSE,
             ),
             'gender' => array(
