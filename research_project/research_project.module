@@ -413,7 +413,7 @@ function access_view_user_profiles($uid){
     }		       
     
     $staff_check = "SELECT COUNT(r1.id) FROM {project_researchers} AS r1, {project_researchers} AS r2 "
-                  ."WHERE r2.uid=%d AND r1=%d AND r2.pid=r1.pid AND r2.uid<>r1.uid";
+                  ."WHERE r2.uid=%d AND r1.uid=%d AND r2.pid=r1.pid AND r2.uid<>r1.uid";
     if(db_result(db_query($staff_check,$uid,$user->uid))>0){
 	return TRUE;
     }

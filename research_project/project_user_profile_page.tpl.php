@@ -27,7 +27,7 @@
         </dl>
         <dl>
             <dt>Sex</dt>
-            <dd><?php echo $person->profiles->gender=='F'?"Female":"Male"; ?></dd>
+            <dd><?php echo $person->profiles->gender=='F'?"Female":($person->profiles->gender=='M'?'Male':''); ?></dd>
         </dl>
         <dl>
             <dt>Phone number</dt>
