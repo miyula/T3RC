@@ -406,10 +406,6 @@ function access_view_user_profiles($uid){
 	return TRUE;
     }
     
-    if(!array_search("researchers", $user->roles)){
-	return FALSE;
-    }
-    
     $researcher_check = "SELECT COUNT(r.id) FROM {project_researchers} AS r, {project_persons} AS p "
                        ."WHERE p.uid=%d AND p.pid=r.pid AND p.uid=%d";
     if(db_result(db_query($researcher_check,$uid,$user->uid))>0){
@@ -917,10 +913,16 @@ function research_project_user($op, &$edit, &$user){
  *    object, user
  */
 function load_user_profiles(&$user){
-    $sql = "SELECT phone, firstname, lastname, photo, ((YEAR(CURDATE())-YEAR(birthday))-(RIGHT(CURDATE(),5)<RIGHT(DATE(birthday),5))) age, YEAR(birthday) byear, MONTH(birthday) bmonth, DAY(birthday) bday, gender FROM {person_profiles} WHERE uid=%d";
-    if($profile=db_fetch_object(db_query($sql,$user->uid))){
-        $user->profiles = $profile;        
+    //check view user profile permission
+    if(access_view_user_profiles($user->uid)){
+	$sql = "SELECT phone, firstname, lastname, photo, ((YEAR(CURDATE())-YEAR(birthday))-(RIGHT(CURDATE(),5)<RIGHT(DATE(birthday),5))) age, YEAR(birthday) byear, MONTH(birthday) bmonth, DAY(birthday) bday, gender FROM {person_profiles} WHERE uid=%d";
+	if($profile=db_fetch_object(db_query($sql,$user->uid))){
+	    $user->profiles = $profile;        
+	}
+    }else{
+	$user->mail = "";
     }
+    
 }
 
 /**

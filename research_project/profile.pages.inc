@@ -12,9 +12,6 @@ function display_user_profiles_page($person){
     drupal_add_css(drupal_get_path('module','research_project')."/profile.css");
     //$person = user_load($uid);
     
-    //check view user profile permission
-    access_view_user_profiles($person->uid);
-    
     //get user profiles
     load_user_profiles($person);
     
