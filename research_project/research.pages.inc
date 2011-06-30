@@ -568,7 +568,6 @@ function invite_participants_form_submit($form, &$form_state){
                     '@site_name' => variable_get('site_name',''),
                 ));
             }
-            $message = t($message_tmp, array('@account_info'=>$account));
             
             //check if user has already linked with project
             $check = "SELECT COUNT(id) FROM {project_persons} WHERE pid=%d AND uid=%d";
