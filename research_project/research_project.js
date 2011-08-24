@@ -14,12 +14,23 @@ $(function(){
  * @param
  *  id: number, the id of project
  */
+function test(){
+	alert("fdfew");
+}
+
+
+/**
+ * Button onclick function
+ * Open select tools dialog
+ * @param
+ *  id: number, the id of project
+ */
 function edit_tools(id){
     //empty dialog content
     $("#edit-dialog-content").html("");
     
     var $dialog = $("#edit-dialog-div");
-    $dialog.dialog( "option", "title", 'Select research tools');
+    $dialog.dialog( "option", "title", ' ');
     $dialog.dialog('open');
     $("#onloading-div").css('display','block');
     
@@ -65,7 +76,7 @@ function save_selected_tools(id){
  */
 function show_new_researcher_window(id){    
     var $dialog = $("#edit-dialog-div");
-    $dialog.dialog( "option", "title", 'Invite new researhers');
+    $dialog.dialog( "option", "title", ' ');
     $dialog.dialog('open');
     $("#onloading-div").css('display','none');
     var url = Drupal.settings.research_project.research_window+id
@@ -208,7 +219,7 @@ function remove_researcher_from_project(pid,rid){
  */
 function display_add_new_report_window(pid){
     var $dialog = $("#edit-dialog-div");
-    $dialog.dialog( "option", "title", 'Add new document');
+    $dialog.dialog( "option", "title", ' ');
     $dialog.dialog('open');
     $("#onloading-div").css('display','none');
     var url = Drupal.settings.research_project.report_window+pid;

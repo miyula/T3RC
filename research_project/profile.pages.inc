@@ -5,9 +5,10 @@
  * page callbacks for user profile pages.
  */
 
+
 /**
  * Menu callback for user/profiles/%
- */
+ */ 
 function display_user_profiles_page($person){
     drupal_add_css(drupal_get_path('module','research_project')."/profile.css");
     //$person = user_load($uid);
@@ -87,12 +88,12 @@ function project_user_profiles_form(&$form_state,$user){
         '#default_value' => empty($user->profiles->lastname)?"":$user->profiles->lastname,
     );
     $options = array(
-        'F' => 'Female',
-        'M' => 'Male',
+        'F' => t('Female'),
+        'M' => t('Male'),
     );
     $form['gender'] = array(
         '#type' => 'radios',
-        '#title' => 'Gender',
+        '#title' => t('Gender'),
         '#required' => TRUE,
         '#options' => $options,
         '#default_value' => empty($user->profiles->gender)?"":$user->profiles->gender,
@@ -105,14 +106,14 @@ function project_user_profiles_form(&$form_state,$user){
     );
     $form['birthday'] = array(
         '#type' => 'textfield',
-        '#title' => 'Birthday',
+        '#title' => t('Birthday'),
         '#required' => FALSE,
         '#description' => t('Data format is YYYY-MM-DD. e.g. 2000-06-21'),
         '#default_value' => empty($user->profiles->birthday)?"":$user->profiles->birthday,    
     );
     $form['picture'] = array(
         '#type'  => 'file',
-        '#title' => 'Picture',
+        '#title' => t('Picture'),
         '#description' => t('If no change, keep this empty.'),
         '#suffix' => empty($user->profiles->photo)?"":"<img src='{$user->profiles->photo}' height='80px'/><br/>",  
     );
@@ -122,10 +123,17 @@ function project_user_profiles_form(&$form_state,$user){
     );
     $form['submit'] = array(
         '#type' => 'submit',
-        '#value' => 'Save',
+        '#value' => t('Save'),
     );
     
     return $form;
+}
+
+
+function test(){
+global $user;
+$content = theme('test_page',$user);
+    return $content;
 }
 /**
  * Handle validate for profile form
@@ -195,5 +203,4 @@ function project_user_profiles_form_submit($form,&$form_state){
     }
     drupal_goto("user/profiles/$uid");
 }
-
 ?>

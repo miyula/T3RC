@@ -40,10 +40,10 @@ function research_project_menu(){
         'file' => 'research.admin.inc',
     );
     $menu['admin/content/researchtools/delete/%'] = array(
-	'title' => t('Delete Research Tool'),
+		'title' => t('Delete Research Tool'),
         'description' => t('Delete seleted research tool'),
         'page callback' => 'delete_research_tools_callback',
-	'page arguments' => array(4),
+		'page arguments' => array(4),
         'access arguments' => array('Edit research tools'),
         'type' => MENU_CALLBACK,
         'file' => 'research.admin.inc',
@@ -64,17 +64,24 @@ function research_project_menu(){
         'type' => MENU_NORMAL_ITEM,
         'file' => 'research.admin.inc',
     );
-    
+    $menu['admin/settings/researchproject/termofuse'] = array(
+		'title' => t('Reseach project term of use'),
+		'description' => t('Invitation email content setting'),
+		'page callback' => 'termofuse_settings_callback',
+		'access arguments' => array('Edit research tools'),
+        'type' => MENU_NORMAL_ITEM,
+        'file' => 'research.admin.inc',
+    );    
     //sub pages for research page
     
     //for admin tools
     $menu['researchpage/tools/window/%'] = array(
-	'title' => t('Select research tools'),
+		'title' => t('Select research tools'),
         'description' => t('Select research tools for the research project.'),
         'page callback' => 'select_research_tools_window',
-	'page arguments' => array(3),
+		'page arguments' => array(3),
         'access callback' => '_current_user_access_edit_research_page',
-	'access arguments' => array(3),
+		'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
@@ -98,15 +105,25 @@ function research_project_menu(){
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
-    
+	//for reports log
+   
+   $menu['reportspage/report/%'] = array(
+		'title' => t('Recent log entries'),
+		'description' => 'View events that have recently been logged.',
+		'page callback' => 'dblog_overview',
+		'page arguments' => array(2),
+		'access arguments' => array('access site reports'),
+		'weight' => -1,
+		'file' => 'reports.pages.inc',
+	);
     //for admin researchers
     $menu['researchpage/researcher/window/%'] = array(
-	'title' => t('Add new researcher'),
+		'title' => t('Add new researcher'),
         'description' => t('Invite new researcher to the project.'),
         'page callback' => 'add_researcher_window',
-	'page arguments' => array(3),
+		'page arguments' => array(3),
         'access callback' => 'owner_of_research_project_page',
-	'access arguments' => array(3),
+		'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
@@ -114,9 +131,9 @@ function research_project_menu(){
 	'title' => t('Edit researcher window'),
         'description' => t('Dispaly edit researcher window.'),
         'page callback' => 'edit_researcher_window',
-	'page arguments' => array(5),
+		'page arguments' => array(5),
         'access callback' => 'owner_of_research_project_page',
-	'access arguments' => array(3),
+		'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
@@ -124,7 +141,7 @@ function research_project_menu(){
 	'title' => t('Save researcher info'),
         'description' => t('save change on researcher info change.'),
         'page callback' => 'ajax_save_researcher_window_change',
-	'page arguments' => array(5),
+		'page arguments' => array(5),
         'access callback' => 'owner_of_research_project_page',
 	'access arguments' => array(3),
         'type' => MENU_CALLBACK,
@@ -174,22 +191,22 @@ function research_project_menu(){
     
     //For inviting people
     $menu['researchpage/participants/page/%'] = array(
-	'title' => t('Invite new people'),
+		'title' => t('Invite new people'),
         'description' => t('Invite new people to participate the project.'),
         'page callback' => 'invite_participants_page',
-	'page arguments' => array(3),
+		'page arguments' => array(3),
         'access callback' => '_current_user_access_edit_research_page',
-	'access arguments' => array(3),
+		'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
     $menu['researchpage/participants/page/%/remove/%'] = array(
-	'title' => t('Remove person'),
-	'description' => t('Remove the seleted person from project'),
-	'page callback' => 'remove_person_from_project_callback',
-	'page arguments' => array(5),
+		'title' => t('Remove person'),
+		'description' => t('Remove the seleted person from project'),
+		'page callback' => 'remove_person_from_project_callback',
+		'page arguments' => array(5),
         'access callback' => '_current_user_access_edit_research_page',
-	'access arguments' => array(3),
+		'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
@@ -259,22 +276,22 @@ function research_project_menu(){
     
     //Participants page
     $menu['researchpage/participants/list/%'] = array(
-	'title' => t('Participants'),
+		'title' => t('Participants'),
         'description' => t('List all participants on this project'),
         'page callback' => 'list_participants_page',
-	'page arguments' => array(3),
+		'page arguments' => array(3),
         'access callback' => '_current_user_access_edit_research_page',
-	'access arguments' => array(3),
+		'access arguments' => array(3),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
     $menu['researchpage/participants/message/send/%'] = array(
-	'title' => t('Send message to participants'),
+		'title' => t('Send message to participants'),
         'description' => t('Send message to participants'),
         'page callback' => 'send_message_to_participants_page',
-	'page arguments' => array(4),
+		'page arguments' => array(4),
         'access callback' => '_current_user_access_edit_research_page',
-	'access arguments' => array(4),
+		'access arguments' => array(4),
         'type' => MENU_CALLBACK,
         'file' => 'research.pages.inc',
     );
@@ -306,8 +323,7 @@ function research_project_menu(){
 	'page arguments' => array(2),
 	'access arguments' => array("access content"),
 	'type' => MENU_CALLBACK,
-    );
-    
+    );   
     //user profile pages
     $menu['user/profiles/%user'] = array(
 	'title arguments' => array(2,'user'),
@@ -329,7 +345,6 @@ function research_project_menu(){
 	'type' => MENU_CALLBACK,
 	'file' => 'profile.pages.inc',
     );
-    
     
     return $menu;
 }
@@ -606,7 +621,7 @@ function research_project_node_info(){
             'module' => 'research_project',
             'descritption' => t('For researcher to create project page.'),
             'has_title' => TRUE,
-            'title_label' => t('Project Name'),
+            'title_label' => t('Project name'),
             'has_body' => TRUE,
             'body_label' => t('Project description'),
         )
@@ -622,22 +637,24 @@ function research_project_form(&$node){
     if ($type->has_title) {
 	$form['title'] = array(
 	    '#type' => 'textfield',
-	    '#title' => check_plain($type->title_label),
+	    '#title' => t('Project Name'),
 	    '#required' => TRUE,
 	    '#default_value' => $node->title,
-            '#description' => t('The name of project'),
+         /**   '#description' => t('The name of project'),
+		 */
 	    '#weight' => -20,
 	);
     }
     if($type->has_body){
         $form['body'] = array(
 	    '#type' => 'textarea',
-	    '#title' => check_plain($type->body_label),
+	    '#title' => t('The link of the research project'),
 	    '#required' => TRUE,
 	    '#default_value' => $node->body,
-            '#cols' => 60,
-            '#rows' => 5,
-            '#description' => t('Description for this project. This will be shown in project page.'),
+            '#cols' => 30,
+            '#rows' => 2,
+           /**  '#description' => t('Description for this project. This will be shown in project page'),
+		   */
 	    '#weight' => 0,
 	);
     }
@@ -652,15 +669,15 @@ function research_project_form(&$node){
     //  1. only invited (only invited person)
     //  2. only by invitation code (only who has invaitation code)
     $invitation_options = array(
-	0 => 'Open - everyone can join the project from project page.',
-	1 => 'Researcher invite people',
-	2 => 'Join by input invitation code',
+	0 => t('Open - everyone can join the project from project page'),
+	1 => t('Researcher invite people'),
+	2 => t('Join by input invitation code'),
     );
     $form['invitation'] = array(
 	'#type' => 'radios',
-	'#title' => 'Invitation way',
+	'#title' => t('Invitation way'),
 	'#options' => $invitation_options,
-	'#description' => t('Choose the way how people can join into the project.'),
+	'#description' => t('Choose the way how people can join into the project'),
 	'#required' => TRUE,
 	'#default_value' => isset($node->invitation)?$node->invitation:0,
     );
@@ -668,13 +685,13 @@ function research_project_form(&$node){
     //set project current status
     //  0. prepairing   1. starting  2.closed, 4. deleted
     $status_options = array(
-	0 => 'Prepairing - only researchers can visit project page.',
-	1 => 'Open - persen can visit project page and join the project.',
-	2 => 'Closed - persen can visit project page but join project closed.',
+	0 => t('Prepairing - only researchers can visit project page'),
+	1 => t('Open - person can visit project page and join the project'),
+	2 => t('Closed - person can visit project page but join project closed'),
     );
     $form['pstatus'] = array(
 	'#type' => 'radios',
-	'#title' => 'Project current status',
+	'#title' => t('Project current status'),
 	'#options' => $status_options,
 	'#description' => t(''),
 	'#required' => TRUE,
@@ -739,7 +756,7 @@ function research_project_load($node){
 	$node->project_code = $npage->project_code;
 	$node->invitation = $npage->invitation_way;
 	$node->pstatus = $npage->status;
-    }
+    }  
     return $node;
 }
 
@@ -899,7 +916,7 @@ function research_project_user($op, &$edit, &$user){
 	    //check person_profiles
 	    $check = "SELECT firstname FROM {person_profiles} WHERE uid=%d";
 	    $result = db_result(db_query($check,$user->uid));
-	    if($result==FALSE||emtpy($result)){
+	    if($result==FALSE||empty($result)){
 		drupal_set_message("Your personal information is empty, please fill it.","status");
 		$url = url("user/profiles/{$user->uid}/edit");
 		header("Location: $url"); 
@@ -1104,7 +1121,7 @@ function get_user_by_phone($phone,$project){
 	$user_info = array(
             'name' => $name,
             'pass' => $default_pass,
-	    'roles' => $roles,
+			'roles' => $roles,
             'status' => 1,
         );             
         $user = user_save($account,$user_info);        
@@ -1139,7 +1156,7 @@ function get_user_by_phone($phone,$project){
  * @return
  *   Array()
  */
-function project_send_http_mail($to_mail,$subject,$body){
+function project_send_http_mail($to_mail,$subject,$body,$isArray=False){
     require_once(drupal_get_path('module','phpmailer').'/phpmailer/class.phpmailer.php');
     $mail = new PHPMailer(true);
     if(empty($to_mail)){
@@ -1161,15 +1178,25 @@ function project_send_http_mail($to_mail,$subject,$body){
 	$mail->FromName = "Side Project Team";    
     
 	$mail->CharSet = "UTF8";              
-	$mail->Encoding = "base64";  
+	$mail->Encoding = "base64"; 
 
-        if(count($to_mail)==1){
+	if($isArray){
+		foreach($to_mail as $address)
+			$mail->AddAddress($address,"");
+	}else{
+		$mail->AddAddress($to_mail,""); 
+	}
+	
+/**	
+	   if(count($to_mail)==1){
 	   $mail->AddAddress($to_mail,""); 
 	}else{
 	    foreach($to_mail as $address){
 		$mail->AddAddress($address,"");
 	    }
 	}
+	
+*/
 	
 	$mail->IsHTML(true);    // send as HTML  
    
@@ -1205,23 +1232,21 @@ function send_sms($to,$message){
     $url = variable_get('sms_server_address', '');
     $port = 80;
     
-    $postfield = 'username='.$username
-                .'&password='.$password
-                .'&batch_data=msisdn,message';
+    $postfield = 'username='.$username.'&password='.$password.'&batch_data=msisdn,message';
 		
     //splite the lenght of message, <160
     if(strlen($message)>160){
-	$length = 154;
-	$messages= str_split($message,$length);
-	$size = count($messages);
-	$number = 1;
+		$length = 154;
+		$messages= str_split($message,$length);
+		$size = count($messages);
+		$number = 1;
 	foreach($messages as $m){
 	    $m = "[$number/$size]".$m;
 	    $postfield.= '%0a"'.$to.'","'.$m.'"';
 	    $number++;
 	}
     }else{
-	$postfield.= '%0a"'.$to.'","'.$message.'"';
+		$postfield.= '%0a"'.$to.'","'.$message.'"';
     }    
     
     

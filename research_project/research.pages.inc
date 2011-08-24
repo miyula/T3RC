@@ -20,7 +20,7 @@ function select_research_tools_window($pid){
     }
     
     //create form
-    $content.= "<h3>Select the tool you want to use:</h3>";
+    $content.= t("<h3>Select the tool you want to use:</h3>");
     $content.= '<form name="research-tools-form">';
     $link_options = array(
         'attributes' => array('target'=>'_blank'),  
@@ -37,7 +37,8 @@ function select_research_tools_window($pid){
         }
         
     }
-    $content.="<p><input type='button' value='Save' onclick='save_selected_tools($pid)'></p>";
+	$temp=t('Save');
+    $content.="<p><input type='button' value=$temp onclick='save_selected_tools($pid)'></p>";
     $content.='</form>';
     
     //release memory
@@ -144,16 +145,14 @@ function invite_new_researcher_form(&$form_state,$pid=0){
     );
     $form['email'] = array(
         '#type' => 'textfield',
-        '#title' => t('Email'),
-        '#description' => t("Invited researchers email address"),
+        '#title' => t('Email address'),
         '#required' => TRUE,
         '#attributes' => array('onblur'=>"check_researcher_email_address($pid)"),
         '#suffix' => '<div id="check-research-email-result-div" class="form-check-result"></div>'
     );
     $form['introduction'] = array(
         '#type' => 'textfield',
-        '#title' => t('Position Introduction'),
-        '#description' => t('A short introduction for this researcher in your project. The content will be shown on project page'),
+        '#title' => t('Invitee\'s position in this project'),
         '#required' => TRUE,
     );
     $rank = array(1=>'1',2=>'2',3=>'3');
@@ -165,7 +164,7 @@ function invite_new_researcher_form(&$form_state,$pid=0){
     );
     $form['send-mail'] = array(
         '#type' => 'checkbox',
-        '#title' => 'Send an email to inform researcher.',
+        '#title' => t('Send an email to inform researcher.'),
     );
     $form['submit'] = array(
         '#value' => '<input id="invite_new_researcher_button" type="button" value="Invite" onclick="invite_new_researcher('.$pid.')" disabled="disabled"  />',
@@ -173,6 +172,8 @@ function invite_new_researcher_form(&$form_state,$pid=0){
     
     return $form;
 }
+
+
 
 
 /**
@@ -208,12 +209,15 @@ function edit_researcher_window($rid){
  */
 function edit_researcher_window_form(&$form_state,$researcher){
     $form['user-info'] = array(
-        '#value' => "<p>Username: {$researcher->name}</p><p>Email: {$researcher->mail}</p>",  
+		'#type'=>'fieldset',
+		'#title'=>t('Username:Email'),
+		'#value' => "{$researcher->name}:{$researcher->mail}",
+       /** '#value' => "<p>Username: {$researcher->name}</p><p>Email: {$researcher->mail}</p>",  */
     );
     $form['introduction'] = array(
         '#type' => 'textfield',
-        '#title' => t('Position Introduction'),
-        '#description' => t('A short introduction for this researcher in your project. The content will be shown on project page'),
+        '#title' => t('Invitee\'s position in this project'),
+       /** '#description' => t('A short introduction for this researcher in your project. The content will be shown on project page'),*/
         '#default_value' => $researcher->introduction,
         '#required' => TRUE,
     );
@@ -241,7 +245,7 @@ function ajax_save_researcher_window_change($rid){
     
     if(empty($introduction)){
         $status = "0";
-        $message = "Introduction should not be empty.";
+        $message = t('Position should not be empty');
     }else{
         $update = "UPDATE project_researchers SET introduction='%s', weight=%d WHERE id=%d";
         db_query($update, $introduction, $weight, $rid);
@@ -262,7 +266,7 @@ function ajax_delete_researcher_from_project($rid){
         $sql = "DELETE FROM {project_researchers} WHERE id=%d";
         if(db_query($sql,$rid)){
             $status = 1;
-            $message = "Successed to remove researcher from project";
+            $message = t('Successed to remove researcher from project');
         }else{
             $status = 0;
             $message = "SQL error!";
@@ -284,7 +288,7 @@ function check_invited_researcher_email($pid){
     $email = $_POST['email'];
     if(valid_email_address($email)!=1){
         $status = 0;
-        $message = "Please give a valid email address";
+        $message = t('Please give a valid email address');
     }else{
         //find account
         $account_sql = "SELECT uid, name FROM {users} WHERE mail='%s'";
@@ -293,14 +297,14 @@ function check_invited_researcher_email($pid){
             $invited_check_sql = "SELECT id FROM {project_researchers} WHERE uid=%d AND pid=%d";
             if(db_result(db_query($invited_check_sql,$user->uid,$pid))){
                 $status = 0;
-                $message = "This researcher has already been invited into this project";
+                $message = t('This researcher has already been invited into this project');
             }else{
                 $status = 1;
                 $message = "You are inviting this person: {$user->name}.";
             }
         }else{
             $status = 0;
-            $message = "Can not find this user";
+            $message = t('Can not find this user');
         }
     }
 
@@ -320,7 +324,7 @@ function ajax_invite_new_researcher($pid){
     //check email address and introduction
     if(valid_email_address($email)!=1||empty($intro)){
         $status = 0;
-        $message = "Invalid input.";
+        $message = t('Invalid input');
     }else{
         //find account
         $account_sql = "SELECT uid, name FROM {users} WHERE mail='%s'";
@@ -329,7 +333,7 @@ function ajax_invite_new_researcher($pid){
             $invited_check_sql = "SELECT id FROM {project_researchers} WHERE uid=%d AND pid=%d";
             if(db_result(db_query($invited_check_sql,$user->uid,$pid))){
                 $status = 0;
-                $message = "This researcher has already been invited into the project.";
+                $message = t('This researcher has already been invited into this project');
             }else{
                 $insert_sql = "INSERT INTO {project_researchers}"
                              ."(uid,pid,created,changed,introduction,weight) "
@@ -337,7 +341,7 @@ function ajax_invite_new_researcher($pid){
                 db_query($insert_sql,$user->uid,$pid,$intro,$weight);
                 
                 $status = 1;
-                $message = "Researcher has been added.";
+                $message = t('Researcher has been added');
                 
                 //send inform mail if required
                 if($send_mail){
@@ -374,7 +378,7 @@ function ajax_invite_new_researcher($pid){
             }
         }else{
             $status = 0;
-            $message = "Can not find this user.";
+            $message = t('Can not find this user');
         }
     }
     
@@ -388,7 +392,7 @@ function invite_participants_page($pid){
     $path = drupal_get_path('module', 'research_project');
     drupal_add_js($path.'/invitation_page.js');
     $content = drupal_get_form('invite_participants_form',$pid);
-    $back_link = l("<< Back to project","research/project/$pid");
+    $back_link = l(t("<< Back to project"),"research/project/$pid");
     $content.= "<p>$back_link</p>";
     return $content;
 }
@@ -401,15 +405,15 @@ function invite_participants_form(&$form_state,$pid=0){
         '#value' => $pid,
     );
     $inform_option = array(
-        'email' => 'By email',
-        'sms' => 'By SMS',
+        'email' => t('By email'),
+        'sms' => t('By SMS'),
     );
     $form['invite-way'] = array(
         "#type" => 'radios',
         "#title" => t('Way to inform'),
-        "#description" => t('The way to inform persons about invitations'),
+       /** "#description" => t('The way to inform persons about invitations'),*/
         '#options' => $inform_option,
-        '#default_value' => 'email',
+        '#default_value' => t('email'),
         '#attributes' => array('onchange'=>'invite_way_onchange()'),
     );
     $form['invitation-list'] = array(
@@ -441,7 +445,7 @@ function invite_participants_form(&$form_state,$pid=0){
     
     $form['submit'] = array(
         '#type' => 'submit',
-        '#value' => 'Send invitation',
+        '#value' => t('Send invitation'),
     );
     
     return $form;
@@ -461,13 +465,12 @@ function invite_participants_form_submit($form, &$form_state){
     $lists = $form_state['values']['invitation-list'];
     $p_message = $form_state['values']['message'];
     $p_subject = $form_state['values']['subjet-title'];
-    
+    $term_of_use=variable_get('termofuse_project_inform_researcher_tpl');
     //get project info
-    $sql = "SELECT n.nid nid, title from {node} AS n, {research_project_page} AS r "
-          ."WHERE r.id=%d AND r.nid=n.nid";
+    $sql = "SELECT n.nid nid, title from {node} AS n, {research_project_page} AS r "."WHERE r.id=%d AND r.nid=n.nid";
     if($project=db_fetch_object(db_query($sql,$pid))){
 	$name = $project->title;
-    }
+    }  
     $project_link = "http://".$_SERVER['HTTP_HOST'].url("research/project/$pid");
     $login_link = "http://".$_SERVER['HTTP_HOST'].url("user");
     //$message_tmp = generate_invitation_template($way,$pid);
@@ -519,9 +522,9 @@ function invite_participants_form_submit($form, &$form_state){
                 drupal_set_message($result['message'],$result['tag']);
                 //$user_link = l($user->name, "user/prifles/".$user->uid);
                 if($result['tag']=='error'){
-                   $mail_status = "Failed"; 
+                   $mail_status = t('Failed'); 
                 }else if($result['tag']=='status'){
-                   $mail_status = "Successed"; 
+                   $mail_status = t('Successed'); 
                 }
                 watchdog("rproject_$pid",
                     "Send mail to @user. @status. Subject: @subject. Body: @body.",
@@ -532,13 +535,14 @@ function invite_participants_form_submit($form, &$form_state){
             
             //send default email
             $subject =  t(variable_get('resarch_project_invite_mail_subject_tpl',''),array("@project_name"=>$name));
+			$message=$message.$term_of_use;
             if($result=project_send_http_mail($mail,$subject,$message)){
                 drupal_set_message($result['message'],$result['tag']);
                 //$user_link = l($user->name, "user/prifles/".$user->uid);
                 if($result['tag']=='error'){
-                   $mail_status = "Failed"; 
+                   $mail_status = t('Failed'); 
                 }else if($result['tag']=='status'){
-                   $mail_status = "Successed"; 
+                   $mail_status = t('Successed'); 
                 }
                 watchdog("rproject_$pid","Send invitation mail to @user. @status",array('@user'=>$user->name, '@status'=>$mail_status),WATCHDOG_INFO);
             }
@@ -637,7 +641,7 @@ function list_participants_page($pid){
     $tool_bar = "<div id='project-tool-bar'>"
                 ."<input type='button' value='+Invite new' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/page/$pid").'"'."'/>"
                 ."<input type='button' value='Send message' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/message/send/$pid").'"'."'/>"
-                ."<input type='button' value='View sending history' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/message/history/$pid").'"'."'/>"
+                ."<input type='button' value='View sending history' onclick='javascript:window.location.href=".'"'.url("reportspage/report/$pid").'"'."'/>"
                ."</div>";
     
     $header = array(
@@ -671,7 +675,7 @@ function list_participants_page($pid){
         $rows[] = $row;
         $id++;
     }
-    $back_link = l("<< Back to project","research/project/$pid");
+    $back_link = l(t("<< Back to project"),"research/project/$pid");
     $content = "<p>$back_link</p>";
     $content.= $tool_bar;
     $content.= theme('table', $header, $rows);
@@ -720,19 +724,18 @@ function new_report_info_form(&$form_state,$pid){
         '#type' => 'select',
         '#title' => t('Select artical'),
         '#options' => $node_list,
-        '#description' => l('Create new content','node/add', array('attributes' => array('target'=>'_blank'))),
+        '#description' => l(t('Create new content'),'node/add', array('attributes' => array('target'=>'_blank'))),
         '#required' => TRUE,    
     );
     $form['introduction'] = array(
         '#type' => 'textarea',
-        '#title' => t('Short introduction'),
-        '#description' => t('Introduction should less than 255 chars'),
+        '#title' => t('Short introduction (less than 255 chars)'),
         '#required' => TRUE,
     );
     $form['weight'] = array(
         '#type' => 'weight',
         '#title' => t('Weight'),
-        '#description' => t('Change the weight to order reports'),
+       /** '#description' => t('Change the weight to order reports'),*/
     );
     $form['submit'] = array(
         '#value' => "<input type='button' value='Add' onclick='add_new_report_to_project($pid)'/>",
@@ -752,7 +755,7 @@ function ajax_bind_report_to_project($pid){
     
     if($nid<=0||empty($introduction)){
         $status = 0;
-        $message = "Invaldate parameters";
+        $message = t("Invaldate parameters");
     }else{
         //check if node already in project document table
         $check = "SELECT id FROM {project_documents} WHERE pid=%d AND nid=%d";
@@ -762,20 +765,20 @@ function ajax_bind_report_to_project($pid){
             $update = "UPDATE {project_documents} SET introduction='%s', weight=%d WHERE id=%d";
             if(db_query($update,$introduction,$weight,$id)){
                 $status = 1;
-                $message = "Successed to update changes.";
+                $message = t("Successed to update changes");
             }else{
                 $status = 0;
-                $message = "SQL error.";
+                $message = t("SQL error");
             }
         }else{
             //Insert new
             $insert = "INSERT INTO {project_documents}(nid,pid,introduction,weight) VALUES(%d,%d,'%s',%d)";
             if(db_query($insert,$nid,$pid,$introduction,$weight)){
                 $status = 1;
-                $message = "Successed to bind new report with project.";
+                $message = t("Successed to bind new report with project");
             }else{
                 $status = 0;
-                $message = "SQL error.";
+                $message = t("SQL error");
             }
         }
     }
@@ -796,7 +799,7 @@ function edit_report_in_project_window($did){
         $content = "<h3>Title: {$report->title}</h3>";
         $content.= drupal_get_form("edit_report_info_form",$report);
     }else{
-        $content = "<h2>Can not find the report information.</h2>";
+        $content = t("<h2>Can not find the report information.</h2>");
     }
     print $content;
 }
@@ -815,14 +818,13 @@ function edit_report_info_form(&$form_state,$report){
     $form['introduction'] = array(
         '#type' => 'textarea',
         '#title' => t('Short introduction'),
-        '#description' => t('Introduction should less than 255 chars'),
+        '#description' => t('Short introduction (less than 255 chars)'),
         '#required' => TRUE,
         '#default_value' => $report->introduction,
     );
     $form['weight'] = array(
         '#type' => 'weight',
         '#title' => t('Weight'),
-        '#description' => t('Change the weight to order reports'),
         '#default_value' => $report->weight,
     );
     $form['submit'] = array(
@@ -840,10 +842,10 @@ function ajax_delete_report_from_project($did){
     $delete = "DELETE FROM {project_documents} WHERE id=%d";
     if(db_query($delete,$did)){
         $status = 1;
-        $message = "Successed to remove report form project.";
+        $message = t("Successed to remove report form project");
     }else{
         $status = 0;
-        $message = "SQL error";
+        $message = t("SQL error");
     }
     
     printf('{"status":%d,"message":"%s"}',$status,$message);
@@ -881,7 +883,7 @@ function remove_person_from_project_callback($ppid){
         $content.= drupal_get_form('remove_person_from_project_form',$person);
         return $content;
     }else{
-        return "<p>No such person can be found from project.</p>";
+        return t("<p>No such person can be found from project.</p>");
     }
 }
 /**
@@ -899,8 +901,8 @@ function remove_person_from_project_form(&$form_state,$person){
     );
     $form['sumbit'] = array(
         '#type' => 'submit',
-        '#value' => 'Remove',
-        '#suffix' => l(" Or cancel?",$cancel_link),
+        '#value' => t('Remove'),
+        '#suffix' => l(t("Or cancel?"),$cancel_link),
     );
     return $form;
 }
@@ -922,7 +924,7 @@ function remove_person_from_project_form_submit($form, &$form_state){
  * Menu callback for researchpage/participants/message/send/%
  */
 function send_message_to_participants_page($pid){
-    $back_link = l("<< Back to participants page","researchpage/participants/list/$pid");
+    $back_link = l(t("<< Back to participants page"),"researchpage/participants/list/$pid");
     $content.= "<p>$back_link</p>";
     $content.= drupal_get_form('message_sending_to_participants_form',$pid);
     $content.= "<p>$back_link</p>";
@@ -932,9 +934,32 @@ function send_message_to_participants_page($pid){
  * Form for message sending
  */
 function message_sending_to_participants_form(&$form_state,$pid){
+		$mails_sql = "SELECT u.mail mail, u.name name FROM {users} AS u, {project_persons} AS p WHERE p.pid=%d AND p.uid = u.uid";
+        $res = db_query($mails_sql,$pid);
+        
+        while($record=db_fetch_object($res)){
+            $mail = $record->mail;
+			$name=$record->name;
+            if(empty($mail)){
+                continue;
+            }
+			$mail_name=$mail." : ".$name; 
+            $mail_list[$mail] = $mail; 
+			//$mail_list[] = $mail;
+        }
+		$phones_sql = "SELECT phone,firstname,lastname FROM {person_profiles} AS p, {project_persons} AS u WHERE u.pid=%d AND u.uid=p.uid";
+        $res = db_query($phones_sql,$pid);
+        $to_list = array();
+        while($record=db_fetch_object($res)){
+            $phone = $record->phone;
+            if(empty($phone)||(valid_phone_number($phone)==FALSE)){
+                continue;
+            }
+            $to_list[$phone] = $phone;
+        }
     $option = array(
-        'email' => 'By email',
-        'sms' => 'By SMS',
+        'email' => t('By email'),
+        'sms' => t('By SMS'),
     );
     $form['pid'] = array(
         '#type' => 'hidden',
@@ -943,28 +968,41 @@ function message_sending_to_participants_form(&$form_state,$pid){
     $form['send-way'] = array(
         "#type" => 'radios',
         "#title" => t('Send way'),
-        "#description" => t('The way to send message'),
+ /**       "#description" => t('The way to send message'),*/
         '#options' => $option,
-        '#default_value' => 'email',
+        '#default_value' => t('email'),
         '#required' => TRUE,
+    );
+	  $form['partipictans-email-list'] = array(
+        "#type" => 'checkboxes',
+        "#title" => t('Email-List'),
+        "#description" => t(''),
+        '#options' => $mail_list,
+    );
+	$form['partipictans-sms-list'] = array(
+        "#type" => 'checkboxes',
+        "#title" => t('SMS-List'),
+        "#description" => t(''),
+        '#options' => $to_list,
     );
     $form['subject'] = array(
         '#type' => 'textfield',
         '#title' => t('Subject'),
-        '#description' => t('If you are sending SMS, just left subject empty'),
+        '#description' => t('If you are send sms, keep it empty!'),
     );
     $form['message'] = array(
         "#type" => 'textarea',
-        "#title" => 'Message content',
-        "#description" => 'If you are sending SMS, please keep it concise.',
+        "#title" => t('Message content'),
+        "#description" => t('If you are sending SMS, please keep it concise.'),
         '#required' => TRUE,
     );
     $form['submit'] = array(
         "#type" => 'submit',
-        '#value' => 'Send'
+        '#value' => t('Send')
     );
     return $form;
 }
+
 /**
  * Handle validation for form message sending
  */
@@ -991,8 +1029,9 @@ function message_sending_to_participants_form_submit($form, &$form_state){
     $way = $form_state['values']['send-way'];
     $message = $form_state['values']['message'];
     
+	//$test=dpm($number);
     if($way=='email'){
-        //get all user email
+/**        //get all user email
         $mails_sql = "SELECT u.mail mail FROM {users} AS u, {project_persons} AS p WHERE p.pid=%d AND p.uid = u.uid";
         $res = db_query($mails_sql,$pid);
         
@@ -1004,10 +1043,22 @@ function message_sending_to_participants_form_submit($form, &$form_state){
             $mail_list[] = $mail;            
             $to_mails.= $mail.', '; 
         }
+*/	
+		$list=array();
+		$list=$form_state['values']['partipictans-email-list'];
+		$store=array();
+		foreach($list as $key=>$value){	
+		  $store[$value]=$value;	  
+		}
+		$base=array(0=>0);
+		$store=array_diff($store,$base);
+			foreach($store as $s){
+				$my_mail=$my_mail.$s.",";
+				}
         $subject = trim(strip_tags($form_state['values']['subject']));
-        $result = project_send_http_mail($mail_list,$subject,$message);
+        $result = project_send_http_mail($store,$subject,$message,True);
         if($result['tag'] == 'status'){
-            drupal_set_message("Successed to send mail to $to_mails","status");
+            drupal_set_message("Successed to send mail to $my_mail","status");
         }else{
             drupal_set_message($result['message'],"error");
         }
@@ -1021,7 +1072,7 @@ function message_sending_to_participants_form_submit($form, &$form_state){
     }else if($way=='sms'){
         //remove HTML tags
         $message = strip_tags($message);
-        //get all user phone numbers
+/**        //get all user phone numbers
         $phones_sql = "SELECT phone FROM {person_profiles} AS p, {project_persons} AS u WHERE u.pid=%d AND u.uid=p.uid";
         $res = db_query($phones_sql,$pid);
         $to_list = array();
@@ -1033,7 +1084,19 @@ function message_sending_to_participants_form_submit($form, &$form_state){
             $to_list[] = $phone;
             $phone_list.= $phone.', '; 
         }
-        send_group_sms($to_list,$message);
+*/
+		$list=array();
+		$list=$form_state['values']['partipictans-sms-list'];
+		$store=array();
+		foreach($list as $key=>$value){	
+			$store[$value]=$value;	  
+			}
+		$base=array(0=>0);
+		$store=array_diff($store,$base);
+		foreach($store as $s){
+				$my_mail=$my_mail.$s.",";
+		}	
+        send_group_sms($store,$message);
         watchdog(
             "rproject_$pid",
             "Send sms to @phone_list. Body: @body",
@@ -1041,10 +1104,4 @@ function message_sending_to_participants_form_submit($form, &$form_state){
             WATCHDOG_INFO
         ); 
     }
-}
-/**
- * Menu callback for researchpage/participants/message/history/%
- */
-function list_message_sending_records_page($pid){
-    
 }

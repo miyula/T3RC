@@ -13,7 +13,7 @@ function list_research_tools_callback(){
     $sql = "SELECT id, name, description, logo from {research_tool} ORDER BY created";
     $res = db_query($sql);
     $header = array(
-        "Logo",  "Tool Name", "Description", "Operations"  
+        t("Logo"),  t("Tool Name"), t("Description"), t("Operations")  
     );
     while($tool=db_fetch_object($res)){
         if(empty($tool->logo)){
@@ -53,33 +53,33 @@ function _research_tool_info(&$form_state,$tool=NULL){
     );
     $form['name'] = array(
         '#type' => 'textfield',
-        '#title' => 'Tool name',
+        '#title' => t('Tool Name'),
         '#required' => TRUE,
         '#default_value' => isset($tool->name)?$tool->name:"",
     );
     $form['description'] = array(
         '#type' => 'textarea',
-        '#title' => 'Description',
+        '#title' => t('Description'),
         '#required' => TRUE,
         '#default_value' => isset($tool->description)?$tool->description:"",
     );
     $form['guidance'] = array(
         '#type' => 'textarea',
-        '#title' => 'Use of guidance',
-        '#description' => t('Please input guidance of how to use this tool.'),
+        '#title' => t('Use of guidance'),
+       /** '#description' => t('Please input guidance of how to use this tool.'),*/
         '#required' => TRUE,
         '#default_value' => isset($tool->guidance)?$tool->guidance:"",
     );
     $form['download'] = array(
         '#type' => 'textfield',
-        '#title' => 'Download Link',
-        '#description' => t('The link to download the tool, if it has.'),
+        '#title' => t('Download Link'),
+       /** '#description' => t('The link to download the tool, if it has.'),*/
         '#default_value' => isset($tool->download)?$tool->download:"",
     );
     $form['logo'] = array(
         '#type'  => 'file',
-        '#title' => 'Tool logo',
-        '#description' => t('Upload a image file as the logo of the tool. If no change, keep this empty.'),
+        '#title' => t('Tool logo'),
+        '#description' => t('Upload a image file as the logo of the tool. If no change, keep this empty'),
         '#prefix' => empty($tool->logo)?"":"<img src='{$tool->logo}' height='80px'/>",
     );
     $form['logo-url'] = array(
@@ -88,7 +88,7 @@ function _research_tool_info(&$form_state,$tool=NULL){
     );
     $form['submit'] = array(
         '#type' => 'submit',
-        '#value' => 'Save',
+        '#value' => t('Save'),
     );
     return $form;
 }
@@ -154,7 +154,7 @@ function edit_research_tools_callback($tool_id){
     if($tool = db_fetch_object(db_query($sql,$tool_id))){
         return drupal_get_form('_research_tool_info',$tool);
     }else{
-        $content="<p><font color='red'>No tool info can be found.</font></p>";
+        $content=t("<p><font color='red'>No tool info can be found.</font></p>");
         return $content;
     }
 }
@@ -165,11 +165,11 @@ function edit_research_tools_callback($tool_id){
 function delete_research_tools_callback($tool_id){
     $sql = "SELECT id, name from {research_tool} WHERE id=%d";
     if($tool = db_fetch_object(db_query($sql,$tool_id))){
-        $content = "You are deleting research tool <strong>{$tool->name}</strong>. ";
+        $content = "<strong>You are deleting research tool <strong>{$tool->name}</strong>. ";
         $content.= drupal_get_form('_delete_research_tool_info',$tool);
         return $content;
     }else{
-        $content="<p><font color='red'>No tool info can be found.</font></p>";
+        $content=t("<p><font color='red'>No tool info can be found.</font></p>");
         return $content;
     }
 }
@@ -182,8 +182,8 @@ function _delete_research_tool_info(&$form_state,$tool){
     );
     $form['submit'] = array(
         '#type' => 'submit',
-        '#value' => 'Delete',
-        '#suffix' => l(" Or cancel?",$cancel_link),
+        '#value' => t('Delete'),
+        '#suffix' => l(t("Or cancel?"),$cancel_link),
     );
     return $form;
 }
@@ -264,7 +264,12 @@ function sms_settings_info_form_submit($form, &$form_state){
 function researchproject_settings_callback(){
     return drupal_get_form('message_template_form');
 }
-
+/**
+ * Menu callback for admin/settings/researchproject/termofuse
+ */
+function termofuse_settings_callback(){
+    return drupal_get_form('termofuse_template_form');
+}
 /**
  * Form for message template settings
  */
@@ -279,7 +284,7 @@ function message_template_form(){
         '#type' => 'textfield',
         '#title' => t('Email subject template for invite new participant'),
         '#default_value' => variable_get('resarch_project_invite_mail_subject_tpl',''),
-        '#description' => t('This is mainly use for sending account info.'),
+        /**'#description' => t('This is mainly use for sending account info.'),*/
         '#required' => TRUE,
     );
     $form['invite_participant_new_mail'] = array(
@@ -293,7 +298,7 @@ function message_template_form(){
         '#type' => 'textarea',
         '#title' => t('Email template for invite new participant'),
         '#default_value' => variable_get('resarch_project_invite_mail_tpl',''),
-        '#description' => t('This mail is mainly use for sending account info.'),
+        '#description' => t('This is mainly use for sending account info.'),
         '#required' => TRUE,
     );
     $form['invite_participant_sms'] = array(
@@ -312,7 +317,7 @@ function message_template_form(){
     );
     $form['submit'] = array(
         '#type' => 'submit',
-        '#value' => 'Save',
+        '#value' => t('Save'),
     );
     return $form;
     
@@ -336,5 +341,32 @@ function message_template_form_submit($form, &$form_state){
     variable_set('resarch_project_invite_mail_tpl', $invite_mail);
     variable_set('resarch_project_invite_SMS_tpl', $invite_sms);
     
+    
+}
+
+/**
+ * Form for term of use template settings
+ */
+function termofuse_template_form(){
+    $form['inform_researcher'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Term of use template for projects'),
+        '#default_value' => variable_get('termofuse_project_inform_researcher_tpl',''),
+        '#required' => TRUE,
+    );
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+    );
+    return $form;
+    
+}
+
+/**
+ * Handle submit for termofuse template settings form
+ */
+function termofuse_template_form_submit($form, &$form_state){
+    $inform = $form_state['values']['inform_researcher'];
+    variable_set('termofuse_project_inform_researcher_tpl', $inform);
     
 }

@@ -8,61 +8,81 @@
  * $module_path: the path of module folder in the syetem
  */
 ?>
+<?php
+$url=curPageURL();
+if(strchr($url,"/fi/"))
+	include"language/fi.php";
+elseif(strchr($url,"/zh-hans/"))	
+	include"language/ch.php";
+else
+	include"language/en.php";
+function curPageURL() {
+ $pageURL = 'http';
+ if ($_SERVER["HTTPS"] == "on") {$pageURL .= "s";}
+ $pageURL .= "://";
+ if ($_SERVER["SERVER_PORT"] != "80") {
+  $pageURL .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
+ } else {
+  $pageURL .= $_SERVER["SERVER_NAME"].$_SERVER["REQUEST_URI"];
+ }
+ return $pageURL;
+}
+?>
 <div id="user-card">
     <div id="user-card-left">
         <dl><?php if(!empty($person->profiles->photo)){
 	    echo "<img src='{$person->profiles->photo}' class='profile-head-photo'/>";
 	}if($person->user_self) { ?>
-        <input type="button" value="Edit my profile" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/> 
-        <input type="button" value="Admin account" onclick="window.location.href='<?=url("user/{$person->uid}/edit")?>'" />
+        <input type="button" value="<?php echo EDIT_PROFILE;?>" onclick="window.location.href='<?=url("user/profiles/{$person->uid}/edit")?>'"/> 
+        <input type="button" value="<?php echo ADMIN_ACCOUNT;?>" onclick="window.location.href='<?=url("user/{$person->uid}/edit")?>'" />
         <?php } ?>
         </dl>
         <dl>
-            <dt>Name</dt>
+            <dt><?php echo NAME;?></dt>
             <dd><?=$person->profiles->firstname?> <?=$person->profiles->lastname?></dd>
         </dl>
         <dl>
-            <dt>Age</dt>
+            <dt><?php echo AGE;?></dt>
             <dd><?=$person->profiles->age?></dd>
         </dl>
         <dl>
-            <dt>Sex</dt>
+            <dt><?php echo SEX;?></dt>
             <dd><?php echo $person->profiles->gender=='F'?"Female":($person->profiles->gender=='M'?'Male':''); ?></dd>
         </dl>
         <dl>
-            <dt>Phone number</dt>
+            <dt><?php echo PHONE_NUMBER;?></dt>
             <dd><?=$person->profiles->phone?></dd>
         </dl>
         <dl>
-            <dt>Email</dt>
+            <dt><?php echo EMAIL;?></dt>
             <dd><?=$person->mail?></dd>
         </dl>
     
     </div>
     <div id="user-card-right">
-        <h2>Research Projects</h2>
+        <h2><?php echo RESEARCH_PROJECT;?></h2>
         <div id="user-card-right-info">
-            <dl><dd><?=$person->work_project?></dd><dt>Research for</dt></dl>
-            <dl><dd><?=$person->participate_project?></dd><dt>participate</dt></dl>
+            <dl><dd><?=$person->work_project?></dd><dt><?php echo RESEARCH_FOR;?></dt></dl>
+            <dl><dd><?=$person->participate_project?></dd><dt><?php echo PARTICIPANTS;?></dt></dl>
         </div>
     </div>
 </div>
 <div class="projects-list-div">
-    <h2>Projects research for</h2>
+    <h2><?php echo PROJECTS_RESEARCH_FOR;?></h2>
     <?php if($person->user_self&&user_access('Create research page')){?>
-       <p><input type='button' value='Create new project' onclick='window.location.href="<?=url('node/add/researchproject')?>"' /></p>  
+       <p><input type='button' value='<?php echo CREATE_NEW_PROJECT;?>' onclick='window.location.href="<?=url('node/add/researchproject')?>"' /></p>  
     <?php } ?>
     <ul class="projects-list">
     <?php foreach($person->work_projects as $project){ ?>
-        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span></li>
+        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> <?php echo AGO;?>)</span></li>
     <?php } ?>
     </ul>
 </div>
 <div class="projects-list-div">
-    <h2>Projects participating in</h2>
+    <h2><?php echo PROJECTS_PARTICIPANTING_IN;?></h2>
     <ul class="projects-list">
     <?php foreach($person->participate_projects as $project){ ?>
-        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span></li>
+        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> <?php echo AGO;?>)</span></li>
     <?php } ?>    
     </ul>
 </div>
