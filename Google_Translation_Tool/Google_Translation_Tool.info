@@ -1,0 +1,6 @@
+; $Id$
+name = "Google Translation Tool"
+description = "Provide translation service depends on Google translation API."
+;dependencies[] = jquery_ui
+core = 6.x
+php = 5.x
