@@ -14,8 +14,8 @@ function Google_Translation_Tool_help($path, $arg) {
     if($path == 'admin/help#google_translation_tool') {
         $txt = 'This module provides translation to all languages that Google Language API supports:'
 		.'<ul>'
-		.'<li>A block for translation panel -- Google translation tool</li>'
-		.'<li>A translate widget for content</li>'
+		.'<li>A block for translation panel -- Google translation tool.</li>'
+		.'<li>A translate widget for content.</li>'
 		.'</ul>';
         return '<p>'.t($txt).'</p>';
     }
@@ -68,7 +68,13 @@ function gtranslate($node){
 		."<input type='button' value='Show Original' onclick='content_original_onclick();'/>"
 		."</div>"
 	       .'<div id="translate-content">'.$content.'</div>'
-	       .'<div id="original-content" style="display:none">'.$content.'</div>';
+	       .'<script type="text/javascript">
+		    $(document).ready(function(){
+			//load original content
+			content_HTML = $("#translate-content").html();
+		    });
+		</script>';
+	       //.'<div id="original-content" style="display:none">'.$content.'</div>';
     return $content;
 }
 

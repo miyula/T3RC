@@ -1,3 +1,4 @@
+var content_HTML;
 
 google.load("language", "1");
 if(Drupal.jsEnabled)
@@ -9,6 +10,9 @@ if(Drupal.jsEnabled)
 	    
 	    $('#edit-original-text').val('');
 	    $('#edit-translation-text').attr('readonly','readonly');
+	    
+	    //load original content
+	    //content_HTML = $('#translate-content').html();
 	    
 	    //create translated text div
 	    var $translated_div = $('<div/>');
@@ -144,11 +148,11 @@ function evaluate(name) {
       //input default language
        var default_language = new Array('en','zh','it','fi');
       
-      language_text[0] = 'Chinese';
+      language_text[0] = '简体中文';
       language_value[0] = 'zh';
-      language_text[1] = 'Finnish';
+      language_text[1] = 'Suomi';
       language_value[1] = 'fi';
-      language_text[2] = 'ITALIAN';
+      language_text[2] = 'Italiano';
       language_value[2] = 'it';
       language_text[3] = 'English'
       language_value[3] = 'en';
@@ -261,8 +265,7 @@ function content_translate_onclick(){
     createCookie('lanCode',lanCode,30);
     //copy the original content to translate content
     var t_content = document.getElementById('translate-content');
-    var o_content = document.getElementById('original-content');
-    t_content.innerHTML = o_content.innerHTML;
+    t_content.innerHTML = content_HTML;
     var list = new Array();
     list.push(t_content);
     translate_elements('',lanCode,list);
@@ -271,9 +274,7 @@ function content_translate_onclick(){
  * Show original content
  */
 function content_original_onclick(){
-    var t_content = document.getElementById('translate-content');
-    var o_content = document.getElementById('original-content');
-    t_content.innerHTML = o_content.innerHTML;
+    $('#translate-content').html(content_HTML);
     $('#translated-text-area').css('display','none');
 }
 
