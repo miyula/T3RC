@@ -8,12 +8,11 @@
  * $module_path: the path of module folder in the syetem
  */
 ?>
-<div id="user-card">
-    <div id="user-card-left">
-        <dl>
-            <dt>Email</dt>
-            <dd><?php echo $terms_template;?></dd>
-        </dl>
-    
+<div id="project_term" class="project_term">
+    <div id="term_title" class="term_title">
+            <?php echo $terms_template['name'];?>
     </div>
+	<div id="term_content" class="term_content">
+			 <?php echo $terms_template['term_of_use'];?>
+	</div>
 </div>
