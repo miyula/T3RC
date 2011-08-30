@@ -483,6 +483,7 @@ function invite_participants_form_submit($form, &$form_state){
 	$name = $project->title;
     }
 	$project_variable_set_name='termofuse_project_'.$name;
+	$terms_link="http://".$_SERVER['HTTP_HOST']."/researchproject/termofuse/".$name;
 	variable_set($project_variable_set_name, $inform);	
     $project_link = "http://".$_SERVER['HTTP_HOST'].url("research/project/$pid");
     $login_link = "http://".$_SERVER['HTTP_HOST'].url("user");
@@ -548,7 +549,7 @@ function invite_participants_form_submit($form, &$form_state){
             
             //send default email
             $subject =  t(variable_get('resarch_project_invite_mail_subject_tpl',''),array("@project_name"=>$name));
-			$message=$message.$term_of_use;
+			$message=$message.$terms_link;
             if($result=project_send_http_mail($mail,$subject,$message)){
                 drupal_set_message($result['message'],$result['tag']);
                 //$user_link = l($user->name, "user/prifles/".$user->uid);
