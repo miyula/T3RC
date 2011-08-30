@@ -1,0 +1,34 @@
+
+/** research tool part **/
+div.research-tool-blocks:after{
+    content: "";
+    height: 0;
+    display: block;
+    clear: both;
+}
+div.research-tool-block{
+    border: 1px solid #777;
+    text-align: center;
+    width: 200px;
+    margin: 10px;
+    float: left;
+    display: inline;
+    overflow: hidden;
+}
+div.research-tool-block img.research-tool-logo{
+    max-width: 150px;
+    max-height: 150px;
+}
+div.research-tool-block ul:after{
+    content: "";
+    height: 0;
+    display: block;
+    clear: both;
+}
+div.research-tool-block ul li{
+    float: left;
+    display: inline;
+    overflow: hidden;
+}
+
+/** end of research tool part **/

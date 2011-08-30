@@ -767,6 +767,7 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     
     $path = drupal_get_path('module', 'research_project');
     drupal_add_css($path.'/research_project.css');
+    drupal_add_css($path.'/css/project_welcome_page.css');
     
     $node = node_prepare($node, $teaser); // get it ready for display
     
@@ -856,7 +857,7 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     
     // Add theme stuff here
     $node->content['research_project_page'] = array(
-	    '#value' => theme('research_project_page', $node),
+	    '#value' => theme('project_welcome_page', $node),
 	    '#weight' => 1,
     );
     return $node;
@@ -885,6 +886,13 @@ function research_project_theme() {
 	    'template' => 'project_user_profile_page',
 	    'arguments' => array(
 		'person' => NULL,
+		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+	    ),
+	),
+	'project_welcome_page' => array(
+	    'template' => 'project_welcome_page',
+	    'argument' => array(
+		'node' => NULL,
 		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
 	    ),
 	),
