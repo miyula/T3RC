@@ -763,6 +763,7 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     
     $path = drupal_get_path('module', 'research_project');
     drupal_add_css($path.'/research_project.css');
+    drupal_add_css($path.'/jquery/css/jquery.window.css');
     drupal_add_css($path.'/css/project_welcome_page.css');
     
     $node = node_prepare($node, $teaser); // get it ready for display
@@ -779,7 +780,7 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     }
     
     if($node->edit_permission){
-	drupal_add_css($path.'/jquery/jquery-ui.css');
+	//drupal_add_css($path.'/jquery/jquery-ui.css');
 	//add setting Drupal.settings.research_project.tool_window
 	drupal_add_js(array('research_project' => array('tool_window' => url("researchpage/tools/window/"))), 'setting');
 	//add setting Drupal.settings.research_project.tool_changed
@@ -801,13 +802,16 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 	//add setting Drupal.settings.research_project.report_refresh
 	drupal_add_js(array('research_project' => array('report_refresh' => url("researchpage/reports/refresh/"))), 'setting');
 	
-        drupal_add_js($path.'/jquery/jquery.js');
-	drupal_add_js($path.'/jquery/jquery-ui.min.js');
-	drupal_add_js($path.'/research_project.js');
     }
     
+    drupal_add_js($path.'/jquery/jquery.js');
+    drupal_add_js($path.'/jquery/jquery-ui.min.js');
+    drupal_add_js($path.'/jquery/jquery.window.min.js');
+    drupal_add_js($path.'/research_project.js');
+    drupal_add_js($path.'/js/project_welcome_page.js');
+    
     //get tools list
-    $tool_sql = "SELECT t.id id, t.name name, t.logo logo "
+    $tool_sql = "SELECT t.id id, t.name name, t.logo logo, t.download download "
                ."FROM {project_tools} AS p, {research_tool} AS t "
                ."WHERE p.pid=%d AND t.id=p.tid";
     $res1 = db_query($tool_sql,$node->pid);
@@ -887,7 +891,7 @@ function research_project_theme() {
 	),
 	'project_welcome_page' => array(
 	    'template' => 'project_welcome_page',
-	    'argument' => array(
+	    'arguments' => array(
 		'node' => NULL,
 		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
 	    ),

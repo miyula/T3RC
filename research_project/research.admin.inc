@@ -72,7 +72,7 @@ function _research_tool_info(&$form_state,$tool=NULL){
     );
     $form['download'] = array(
         '#type' => 'textfield',
-        '#title' => t('Download Link'),
+        '#title' => t('Data view link'),
        /** '#description' => t('The link to download the tool, if it has.'),*/
         '#default_value' => isset($tool->download)?$tool->download:"",
     );
