@@ -640,8 +640,6 @@ function research_project_form(&$node){
 	    '#title' => t('Project Name'),
 	    '#required' => TRUE,
 	    '#default_value' => $node->title,
-         /**   '#description' => t('The name of project'),
-		 */
 	    '#weight' => -20,
 	);
     }
@@ -651,14 +649,12 @@ function research_project_form(&$node){
 	    '#title' => t('The link of the research project'),
 	    '#required' => TRUE,
 	    '#default_value' => $node->body,
-            '#cols' => 30,
-            '#rows' => 2,
-           /**  '#description' => t('Description for this project. This will be shown in project page'),
-		   */
+        '#cols' => 30,
+        '#rows' => 2,
 	    '#weight' => 0,
 	);
     }
-    
+
     //select research tools
     $form['tools'] = array(
 	'#value' => '<p>To be implemented later...</p>',
@@ -1054,7 +1050,15 @@ function generate_invitation_template($type,$pid){
     
     return $content;
 }
-
+function generate_project_name($pid){
+    //get project info
+    $sql = "SELECT n.nid nid, n.title title from {node} AS n, {research_project_page} AS r "
+          ."WHERE r.id=%d AND r.nid=n.nid";
+    if($project=db_fetch_object(db_query($sql,$pid)))
+			$name = $project->title;
+	$content='termofuse_project_'.$name;		
+    return $content;
+}
 /**
  * get user by email, if no user found, generate new one
  * @param

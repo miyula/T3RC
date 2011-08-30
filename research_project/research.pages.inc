@@ -434,6 +434,15 @@ function invite_participants_form(&$form_state,$pid=0){
         '#required' => TRUE,
         '#default_value' => generate_invitation_template('email',$pid),
     );
+//term of use  generate_project_name
+    $form['term'] = array(
+	    '#type' => 'textarea',
+	    '#title' => t('Term of use'),
+	    '#required' => False,
+	    '#default_value' => variable_get(generate_project_name($pid),variable_get('termofuse_project_inform_researcher_tpl','')),
+        '#cols' => 30,
+        '#rows' => 2,
+	);
     $form['email-message'] = array(
         '#type' => 'hidden',
         '#value' => generate_invitation_template('email',$pid),
@@ -465,12 +474,16 @@ function invite_participants_form_submit($form, &$form_state){
     $lists = $form_state['values']['invitation-list'];
     $p_message = $form_state['values']['message'];
     $p_subject = $form_state['values']['subjet-title'];
+	$inform=$form_state['values']['term'];
+
     $term_of_use=variable_get('termofuse_project_inform_researcher_tpl');
     //get project info
     $sql = "SELECT n.nid nid, title from {node} AS n, {research_project_page} AS r "."WHERE r.id=%d AND r.nid=n.nid";
     if($project=db_fetch_object(db_query($sql,$pid))){
 	$name = $project->title;
-    }  
+    }
+	$project_variable_set_name='termofuse_project_'.$name;
+	variable_set($project_variable_set_name, $inform);	
     $project_link = "http://".$_SERVER['HTTP_HOST'].url("research/project/$pid");
     $login_link = "http://".$_SERVER['HTTP_HOST'].url("user");
     //$message_tmp = generate_invitation_template($way,$pid);
@@ -637,11 +650,11 @@ function list_participants_page($pid){
           ."FROM {project_persons} AS p, {users} AS u, {person_profiles} AS pf "
           ."WHERE p.pid=%d AND p.uid=u.uid AND p.uid=pf.uid ORDER BY p.created";
     $res = db_query($sql,$pid);
-    
+    $invite=t('+Invite new');$send_message=t('Send message');$history=t('View sending history');
     $tool_bar = "<div id='project-tool-bar'>"
-                ."<input type='button' value='+Invite new' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/page/$pid").'"'."'/>"
-                ."<input type='button' value='Send message' onclick='javascript:window.location.href=".'"'.url("researchpage/participants/message/send/$pid").'"'."'/>"
-                ."<input type='button' value='View sending history' onclick='javascript:window.location.href=".'"'.url("reportspage/report/$pid").'"'."'/>"
+                ."<input type='button' value=$invite onclick='javascript:window.location.href=".'"'.url("researchpage/participants/page/$pid").'"'."'/>"
+                ."<input type='button' value=$send_message onclick='javascript:window.location.href=".'"'.url("researchpage/participants/message/send/$pid").'"'."'/>"
+                ."<input type='button' value=$history onclick='javascript:window.location.href=".'"'.url("reportspage/report/$pid").'"'."'/>"
                ."</div>";
     
     $header = array(
@@ -669,7 +682,7 @@ function list_participants_page($pid){
             array('data'=>t(format_interval(time() - $person->access))),
         );
         if($edit_access){
-            $remove_link = l("[Remove]", "researchpage/participants/page/$pid/remove/{$person->id}");
+            $remove_link = l(t("Remove"), "researchpage/participants/page/$pid/remove/{$person->id}");
             $row[] = $remove_link;
         }
         $rows[] = $row;
