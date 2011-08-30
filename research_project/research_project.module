@@ -72,7 +72,15 @@ function research_project_menu(){
         'type' => MENU_NORMAL_ITEM,
         'file' => 'research.admin.inc',
     );    
-    //sub pages for research page
+        //pages for display term of use page
+     $menu['researchproject/termofuse/%'] = array(
+		'title' => t('Terms of use'),
+        'page callback' => 'terms_of_use',
+		'page arguments' => array(2),
+		'access arguments' => array('access content'),
+        'type' => MENU_CALLBACK,
+        'file' => 'terms.pages.inc',
+    );
     
     //for admin tools
     $menu['researchpage/tools/window/%'] = array(
@@ -889,6 +897,13 @@ function research_project_theme() {
 	    'template' => 'project_welcome_page',
 	    'argument' => array(
 		'node' => NULL,
+		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+	    ),
+	),
+	'project_terms_of_use_page' => array(
+	    'template' => 'project_terms_of_use_page',
+	    'arguments' => array(
+		'terms_template' => NULL,
 		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
 	    ),
 	),
