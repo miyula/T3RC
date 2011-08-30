@@ -1,0 +1,37 @@
+#term_title {
+    background-color: #29709C;
+    color: #FFFFFF;
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    overflow: visible;
+    padding: 10px 20px;
+    text-align: center;
+    width: 250px;
+}
+#term_content {
+    border: 1px solid #999999;
+    padding: 0 20px 20px;
+    text-align: left;
+    width: 600px;
+}
+.next_btn {
+    background-color: #29709C;
+    cursor: pointer;
+    color: #FFFFFF;
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    overflow: visible;
+    padding: 10px 20px;
+    text-align: center;
+    width: 150px;
+}
+input {
+    font: 12px/1.5em Verdana,"Lucida Grande",Arial,Helvetica,sans-serif;
+}
+#confirm_button{
+	text-align: middle;
+}
