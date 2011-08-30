@@ -354,6 +354,18 @@ function research_project_menu(){
 	'file' => 'profile.pages.inc',
     );
     
+    //menus for manage project
+    $menu['node/%node/manage'] = array(
+	'title' => t('Manage project'),
+	'description' => t('Manage project'),
+	'page callback' => 'manage_project_page',
+	'page arguments' => array(1,'node'),
+	'access callback' => '_manage_project_access',
+	'access arguments' => array(1),
+	'type' =>  MENU_LOCAL_TASK,
+	'file' => 'manage.pages.inc',
+    );
+    
     return $menu;
 }
 
@@ -422,6 +434,23 @@ function owner_of_research_project_page($pid){
     
     return FALSE;
 }
+
+/**
+ * Chech current user has permission to view project manage page
+ * Who has the permission:
+ *   - the owner who create the project
+ *   - the researcher who in the project
+ */
+function _manage_project_access($node){
+    //get project id
+    $sql = "SELECT id FROM {research_project_page} WHERE nid=%d";
+    $pid = db_result(db_query($sql,$node));
+    if($pid){
+	return _current_user_access_edit_research_page($pid);
+    }
+    return FALSE;
+}
+
 
 /**
  * Check the account has permission to see user profile
