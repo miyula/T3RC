@@ -499,7 +499,7 @@ function invite_participants_form_submit($form, &$form_state){
             if($user->new_user){
                 $message = t($message_new_tmp, array(
                     '@project_name' => $name,
-                    '@project_link' => "<a href='$project_link'>$project_link</a>",
+                    '@project_link' => "<a href='$project_link'>$terms_link</a>",
                     '@login_link' => $login_link,
                     '@user_name' => $user->name,
                     '@password' => $user->pass,
@@ -512,7 +512,7 @@ function invite_participants_form_submit($form, &$form_state){
             }else{
                 $message = t($message_tmp, array(
                     '@project_name' => $name,
-                    '@project_link' => $project_link,
+                    '@project_link' => $terms_link,
                     '@user_name' => $user->name,
                     '@site_name' => variable_get('site_name',''),
                     )
@@ -531,7 +531,7 @@ function invite_participants_form_submit($form, &$form_state){
                 db_query($insert,$user->uid,$pid);
             }            
             
-            //send researcher defines email
+/**            //send researcher defines email
             if($result=project_send_http_mail($mail,$p_subject,$p_message)){
                 drupal_set_message($result['message'],$result['tag']);
                 //$user_link = l($user->name, "user/prifles/".$user->uid);
@@ -546,7 +546,7 @@ function invite_participants_form_submit($form, &$form_state){
                     WATCHDOG_INFO
                 );
             }
-            
+ */          
             //send default email
             $subject =  t(variable_get('resarch_project_invite_mail_subject_tpl',''),array("@project_name"=>$name));
 			$message=$message.$terms_link;
