@@ -549,7 +549,7 @@ function invite_participants_form_submit($form, &$form_state){
  */          
             //send default email
             $subject =  t(variable_get('resarch_project_invite_mail_subject_tpl',''),array("@project_name"=>$name));
-			$message=$message.$terms_link;
+			
             if($result=project_send_http_mail($mail,$subject,$message)){
                 drupal_set_message($result['message'],$result['tag']);
                 //$user_link = l($user->name, "user/prifles/".$user->uid);
