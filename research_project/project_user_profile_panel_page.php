@@ -54,7 +54,10 @@
     <?php } ?>
     <ul class="projects-list">
     <?php foreach($person->work_projects as $project){ ?>
-        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span></li>
+        <li>
+	    <p><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> ago)</span>    </p>
+	    
+	</li>
     <?php } ?>
     </ul>
 </div>

@@ -74,7 +74,20 @@ function curPageURL() {
     <?php } ?>
     <ul class="projects-list">
     <?php foreach($person->work_projects as $project){ ?>
-        <li><a href="<?=url("node/".$project[nid])?>"><?=$project['title']?></a> <span class="history-text">(Joined in <?=format_interval(time()-$project['history'])?> <?php echo AGO;?>)</span></li>
+        <li>
+	  <h3><a href="<?=url("node/".$project->nid)?>"><?=$project->title?></a></h3>
+	  <p><span class="history-text">(Joined in <?=format_interval(time()-$project->history)?> <?php echo AGO;?>)</span><a href="<?=url("node/{$node->nid}/manage")?>">manage</a></p>
+	  <div class="research-tool-blocks">
+	   <?php foreach($project->tool_list as $tool): ?>
+	    <div class="research-tool-block">
+	     <div class="research-tool-log-div">
+	      <a class="tab-window-link" href=""><img class="research-tool-logo" src="<?=$tool['logo']?>" alt="<?=$tool['name']?>"/></a>
+	     </div>
+	     <p class="research-tool-name-p"><a class="tab-window-link" href="<?=url("research/tools/{$tool['id']}")?>"><?=$tool['name']?></a></p>
+	    </div>
+	   <?php endforeach; ?>
+	  </div>
+	</li>
     <?php } ?>
     </ul>
 </div>

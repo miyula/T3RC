@@ -10,7 +10,17 @@
  * Menu callback for user/profiles/%
  */ 
 function display_user_profiles_page($person){
+    $path = drupal_get_path('module','research_project');
     drupal_add_css(drupal_get_path('module','research_project')."/profile.css");
+    drupal_add_css($path.'/jquery/css/jquery.window.css');
+    drupal_add_css($path.'/css/project_welcome_page.css');
+    
+        
+    drupal_add_js($path.'/jquery/jquery.js');
+    drupal_add_js($path.'/jquery/jquery-ui.min.js');
+    drupal_add_js($path.'/jquery/jquery.window.min.js');
+    //drupal_add_js($path.'/js/project_welcome_page.js');
+    
     //$person = user_load($uid);
     
     //get user profiles
@@ -30,8 +40,20 @@ function display_user_profiles_page($person){
                         ."WHERE r.uid={$person->uid} AND r.pid=p.id AND n.nid=p.nid ORDER by r.created";
                         
     $res2 = db_query($work_projects_sql);
-    while($project=db_fetch_array($res2)){
+    while($project=db_fetch_object($res2)){
+        
+        //get tool list
+        $tool_sql = "SELECT t.id id, t.name name, t.logo logo, t.download download "
+               ."FROM {project_tools} AS p, {research_tool} AS t "
+               ."WHERE p.pid=%d AND t.id=p.tid";
+        $res4 = db_query($tool_sql,$project->nid);
+        $tool_list = array();
+        while($tool = db_fetch_array($res4)){
+            $tool_list[] = $tool;
+        }
+        $project->tool_list = $tool_list;
         $work_projects[] = $project;
+        
     }
     //print_r($work_projects);
     $person->work_projects = $work_projects;
