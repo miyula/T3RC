@@ -442,9 +442,10 @@ function owner_of_research_project_page($pid){
  *   - the researcher who in the project
  */
 function _manage_project_access($node){
+    
     //get project id
     $sql = "SELECT id FROM {research_project_page} WHERE nid=%d";
-    $pid = db_result(db_query($sql,$node));
+    $pid = db_result(db_query($sql,$node->nid));
     if($pid){
 	return _current_user_access_edit_research_page($pid);
     }
@@ -661,6 +662,7 @@ function research_project_node_info(){
             'title_label' => t('Project name'),
             'has_body' => TRUE,
             'body_label' => t('Project description'),
+	    
         )
     );
 }
@@ -680,16 +682,25 @@ function research_project_form(&$node){
 	    '#weight' => -20,
 	);
     }
+    
     if($type->has_body){
         $form['body'] = array(
 	    '#type' => 'textarea',
 	    '#title' => t('The link of the research project'),
 	    '#required' => TRUE,
 	    '#default_value' => $node->body,
-        '#cols' => 30,
-        '#rows' => 2,
+	    '#cols' => 30,
+	    '#rows' => 2,
 	    '#weight' => 0,
 	);
+	$form['teaser_include'] = array(
+	'#type' => 'checkbox', 
+	'#title' => t('Show summary in full view'), 
+	'#default_value' => $include, 
+	'#prefix' => '<div class="teaser-checkbox">', 
+	'#suffix' => '</div>',
+    );
+	$form['format'] = filter_form(2,20,array('format'));
     }
 
     //select research tools
@@ -893,10 +904,14 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
     $node->document_list = $document_list;
     
     // Add theme stuff here
-    $node->content['research_project_page'] = array(
+    
+    $node->body = $node->body.theme('project_welcome_page', $node);
+    /*$node->content['research_project_page'] = array(
 	    '#value' => theme('project_welcome_page', $node),
 	    '#weight' => 1,
-    );
+    );*/
+    $node->content['body']['#value'] = $node->body;
+    //$node->teaser = node_teaser($node->body, null, 50);
     return $node;
 }
 
