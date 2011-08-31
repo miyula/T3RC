@@ -442,9 +442,10 @@ function owner_of_research_project_page($pid){
  *   - the researcher who in the project
  */
 function _manage_project_access($node){
+    
     //get project id
     $sql = "SELECT id FROM {research_project_page} WHERE nid=%d";
-    $pid = db_result(db_query($sql,$node));
+    $pid = db_result(db_query($sql,$node->nid));
     if($pid){
 	return _current_user_access_edit_research_page($pid);
     }
