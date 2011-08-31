@@ -16,7 +16,7 @@
 			 <?php echo $terms_template['term_of_use'];?>
 	</div>
 	<div id="confirm_button">
-	<input class="next_btn" type="button" value="Accept" onClick="parent.location='http://t3rc.tkk.fi/t3rc/home_page'"> 
+	<input class="next_btn" type="button" value="Accept" onClick="parent.location='http://t3rc.tkk.fi/t3rc/content/guidline'"> 
 	<input class="next_btn" type="button" value="Decline" onClick="parent.location='http://t3rc.tkk.fi/t3rc/home_page'">
 	</div>
 </div>
