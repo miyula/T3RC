@@ -76,7 +76,7 @@ function curPageURL() {
     <?php foreach($person->work_projects as $project){ ?>
         <li>
 	  <h3><a href="<?=url("node/".$project->nid)?>"><?=$project->title?></a></h3>
-	  <p><span class="history-text">(Joined in <?=format_interval(time()-$project->history)?> <?php echo AGO;?>)</span><a href="<?=url("node/{$node->nid}/manage")?>">manage</a></p>
+	  <p><span class="history-text">(Joined in <?=format_interval(time()-$project->history)?> <?php echo AGO;?>)</span><a href="<?=url("node/{$project->nid}/manage")?>">manage</a></p>
 	  <div class="research-tool-blocks">
 	   <?php foreach($project->tool_list as $tool): ?>
 	    <div class="research-tool-block">
