@@ -911,7 +911,7 @@ function research_project_view($node, $teaser = FALSE, $page = FALSE) {
 	    '#weight' => 1,
     );*/
     $node->content['body']['#value'] = $node->body;
-    //$node->teaser = node_teaser($node->body, null, 50);
+    $node->teaser = node_teaser($node->body, null, 1);
     return $node;
 }
 
