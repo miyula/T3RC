@@ -361,7 +361,7 @@ function research_project_menu(){
 	'page callback' => 'manage_project_page',
 	'page arguments' => array(1,'node'),
 	'access callback' => '_manage_project_access',
-	'access arguments' => array(1),
+	'access arguments' => array(1,'node'),
 	'type' =>  MENU_LOCAL_TASK,
 	'file' => 'manage.pages.inc',
     );
