@@ -48,6 +48,6 @@
 
 <!-- start part of join link -->
 <div class="join-link-div">
-    <p><a href="<?=url("researchproject/termofuse/{$node->title}");?>">I want to join</a></p>
+    <p><a href="<?=url("researchproject/termofuse/{$node->title}");?>">I want to join it</a></p>
 </div>
 <!-- end part of join link -->
