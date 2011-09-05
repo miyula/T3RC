@@ -1,0 +1,79 @@
+<?php
+
+/**
+ * Implementation of hook_help()
+ */
+function research_project_blocks_help($path, $arg){
+    switch ($path) {
+        
+        // In main module help page
+        case 'admin/help#research_project_block_help':
+            return '<p>'.t("This module help to generate blocks for Research Project Management module.").'</p>';
+    }
+}
+
+/**
+ * Implemenation of hook_block()
+ */
+function research_project_blocks_block($op = 'list', $delta = 0, $edit = array()){
+    if($op == 'list'){
+        $blocks = array();
+        
+        //TODO:get projects list
+        $get_list_sql = "SELECT r.nid, n.title FROM {research_project_page} AS r LEFT JOIN {node} AS n ON r.nid=n.nid";
+        $res = db_query($get_list_sql);
+        while($project = db_fetch_object($res)){
+            $blocks[$project->nid] = array(
+                'info'   => $project->title,
+                'cache'  => BLOCK_CACHE_GLOBAL,
+                'weight' => 1,
+                'status' => 0,
+            );
+        }
+        
+        return $blocks;
+    }elseif($op == 'configure'){
+        
+    }elseif($op == 'save'){
+        
+    }elseif($op == 'view'){
+        drupal_add_css(drupal_get_path('module','research_project_blocks').'/project_blocks.css');
+        
+        //get node info
+        $node = node_load($delta);
+        
+        $block = array(
+            'subject' => t($node->title), 
+            'content' => display_project_introduction_block($node),
+        );
+        return $block;
+    }
+}
+
+/**
+ * Implementation of hook_theme()
+ */
+function research_project_blocks_theme(){
+    return array(
+        'project_introduction_block' => array(
+            'template' => 'project_introduction_block',
+	    'arguments' => array(
+                'block' => NULL,
+                'module_path' => base_path().drupal_get_path('module','research_project_blocks'),
+            ),
+        ),
+    );
+}
+
+/**
+ *
+ */
+function display_project_introduction_block($node){
+    //get project info
+    $block = array(
+        'content' => node_teaser($node->body),
+        'read_more' => url("node/{$node->nid}"),  
+    );
+    
+    return theme('project_introduction_block',$block);
+}

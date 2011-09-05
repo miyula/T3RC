@@ -1,0 +1,8 @@
+; $Id$
+name = "Research Project Management - Block"
+description = "Provide project management on research projects paltform"
+package = T3RC project
+dependencies[] = phpmailer
+dependencies[] = research_project
+core = 6.x
+php = 5.x

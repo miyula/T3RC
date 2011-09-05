@@ -924,21 +924,21 @@ function research_project_theme() {
 	    'template' => 'research_project_page',
 	    'arguments' => array(
 		'node' => NULL,
-		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+		'module_path' => base_path().drupal_get_path('module','research_project'),
 	    ),
 	),
 	'research_tool_page' => array(
 	    'template' => 'research_tool_page',
 	    'arguments' => array(
 		'tool' => NULL,
-		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+		'module_path' => base_path().drupal_get_path('module','research_project'),
 	    ),
 	),
 	'project_user_profile_page' => array(
 	    'template' => 'project_user_profile_page',
 	    'arguments' => array(
 		'person' => NULL,
-		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+		'module_path' => base_path().drupal_get_path('module','research_project'),
 	    ),
 	),
 	'project_welcome_page' => array(
@@ -952,7 +952,7 @@ function research_project_theme() {
 	    'template' => 'project_terms_of_use_page',
 	    'arguments' => array(
 		'terms_template' => NULL,
-		'module_path' => str_replace("?q=","",url(drupal_get_path('module','research_project'))),
+		'module_path' => base_path().drupal_get_path('module','research_project'),
 	    ),
 	),
     );
